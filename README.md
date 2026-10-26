@@ -79,9 +79,23 @@ Mỗi nhóm 2 thành viên phụ trách 1 phân hệ trong `services/{tên_servi
 
 ---
 
+
+---
+
+## 📋 Quy trình báo cáo tiến độ (Worklog theo Version)
+
+Dự án áp dụng mô hình **Lặp và Tăng trưởng (Iterative & Incremental)** với các phiên bản Version 1.0, 2.0, 3.0...
+* Toàn bộ tiến độ được theo dõi tập trung tại file: **[docs/worklog.md](docs/worklog.md)**.
+* **Quy ước cho các nhóm:** Trong từng đợt làm việc, mỗi nhóm chịu trách nhiệm tự cập nhật 2 cột:
+  * **Phần DT (Đặc tả):** Ghi rõ yêu cầu nghiệp vụ, luồng xử lý, thay đổi dữ liệu của nhóm.
+  * **Phần rAI:** Ghi rõ mã nguồn, API, kiểm thử và rà soát kỹ thuật.
+* **Quy ước cho Leader:** Leader sẽ nghiệm thu từng đợt, chính thức đặt tên cho từng Version và ghi nhận xét đánh giá.
+
 ## 📖 Tài liệu kỹ thuật tham khảo
 
 Xem chi tiết trong thư mục `docs/`:
+* [docs/worklog.md](docs/worklog.md): Nhật ký tiến độ các đợt Version của dự án.
+* [docs/spec.md](docs/spec.md): Đặc tả nghiệp vụ PRD 4 phân hệ.
 * [docs/architecture.md](docs/architecture.md): Quyền sở hữu dữ liệu, nguyên tắc giao tiếp giữa các service.
 * [docs/api-conventions.md](docs/api-conventions.md): Chuẩn REST API, mã lỗi, định dạng JSON `snake_case`.
 * [docs/design-system.md](docs/design-system.md): Bảng màu, typography, CSS class components chuẩn.

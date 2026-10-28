@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Biểu phí học phí - Finance Module</title>
+  <title>Biểu phí & Voucher - Finance Module</title>
   <link rel="stylesheet" href="/shared/css/variables.css">
   <link rel="stylesheet" href="/shared/css/base.css">
   <link rel="stylesheet" href="/shared/css/components.css">
@@ -16,17 +16,17 @@
       <div id="header"></div>
       <div class="content">
         <nav class="breadcrumb">
-          <a href="/">Tổng quan</a> / <span>Tài chính</span> / <span>Cấu hình biểu phí</span>
+          <a href="/">Tổng quan</a> / <span>Tài chính</span> / <span>Cấu hình biểu phí & Voucher</span>
         </nav>
 
         <div class="card">
           <div class="card-header">
             <div>
-              <h1 class="heading-1">Biểu Phí Khóa Học & Đào Tạo</h1>
-              <p class="text-secondary text-sm">Chính sách học phí tiêu chuẩn áp dụng cho các khóa học</p>
+              <h1 class="heading-1">Biểu Phí Khóa Học & Voucher Giảm Giá (FIN-01)</h1>
+              <p class="text-secondary text-sm">Quản lý mức học phí chuẩn, cấu hình mã voucher ưu đãi áp dụng cho từng chương trình đào tạo</p>
             </div>
-            <button class="btn btn-primary" onclick="alert('Tính năng cập nhật biểu phí đang phát triển!')">
-              + Thiết lập biểu phí mới
+            <button class="btn btn-primary" onclick="openTuitionModal()">
+              + Thiết lập biểu phí & Voucher
             </button>
           </div>
           <div class="card-body">
@@ -34,34 +34,19 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Mã khóa học</th>
-                    <th>Tên chương trình</th>
-                    <th>Thời lượng</th>
-                    <th>Mức học phí niêm yết</th>
+                    <th>ID</th>
+                    <th>Khóa học (course_id)</th>
+                    <th>Học phí chuẩn</th>
+                    <th>Voucher / Giảm giá</th>
+                    <th>Học phí thực tế</th>
                     <th>Ghi chú</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody id="tuition-tbody">
                   <tr>
-                    <td><code>ENG-IELTS-FOUND</code></td>
-                    <td><strong>IELTS Foundation 4.5 - 5.5</strong></td>
-                    <td>12 tuần</td>
-                    <td><strong style="color: var(--color-primary);">6.500.000 ₫</strong></td>
-                    <td>Đã bao gồm giáo trình và tài liệu Mock Test</td>
-                  </tr>
-                  <tr>
-                    <td><code>ENG-IELTS-INT</code></td>
-                    <td><strong>IELTS Intensive 6.5+</strong></td>
-                    <td>14 tuần</td>
-                    <td><strong style="color: var(--color-primary);">8.500.000 ₫</strong></td>
-                    <td>Bao gồm 3 buổi chấm bài Writing 1:1 với cựu Examiner</td>
-                  </tr>
-                  <tr>
-                    <td><code>ENG-TOEIC-600</code></td>
-                    <td><strong>TOEIC Cấp Tốc 600+</strong></td>
-                    <td>8 tuần</td>
-                    <td><strong style="color: var(--color-primary);">4.200.000 ₫</strong></td>
-                    <td>Cam kết chuẩn đầu ra</td>
+                    <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">
+                      Đang tải danh sách biểu phí...
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -71,8 +56,166 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal Thêm/Sửa Biểu phí & Voucher -->
+  <div class="modal-overlay" id="tuitionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="heading-3">Thiết Lập Biểu Phí & Voucher (FIN-01)</h3>
+        <button class="modal-close" onclick="closeTuitionModal()">&times;</button>
+      </div>
+      <form id="tuitionForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="label" for="courseId">Chọn Khóa học <span class="required">*</span></label>
+            <select id="courseId" class="form-input" required>
+              <option value="1">Khóa học #1 - IELTS Foundation</option>
+              <option value="2">Khóa học #2 - IELTS Intensive</option>
+              <option value="3">Khóa học #3 - TOEIC Cấp tốc</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            <div class="form-group">
+              <label class="label" for="tuitionAmount">Mức học phí chuẩn (VND) <span class="required">*</span></label>
+              <input type="number" id="tuitionAmount" class="form-input" placeholder="6500000" min="1000" step="50000" required>
+            </div>
+            <div class="form-group">
+              <label class="label" for="discountAmount">Số tiền giảm giá (VND)</label>
+              <input type="number" id="discountAmount" class="form-input" placeholder="500000" min="0" step="10000" value="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="voucherCode">Mã Voucher giảm giá</label>
+            <input type="text" id="voucherCode" class="form-input" placeholder="VD: EARLYBIRD2026, SUMMERPROMO">
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="tuitionNote">Ghi chú chính sách</label>
+            <input type="text" id="tuitionNote" class="form-input" placeholder="Đã bao gồm giáo trình và tài liệu luyện thi">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeTuitionModal()">Đóng</button>
+          <button type="submit" class="btn btn-primary">Lưu biểu phí</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/shared/js/auth.js"></script>
   <script src="/shared/js/api.js"></script>
   <script src="/shared/js/layout.js"></script>
+  <script>
+    let courseMap = {};
+
+    async function loadCoursesForMapping() {
+      try {
+        const res = await apiGet('/api/admission/courses');
+        const courses = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+        if (courses.length > 0) {
+          const select = document.getElementById('courseId');
+          select.innerHTML = courses.map(c => {
+            courseMap[c.id] = c;
+            return `<option value="${c.id}">[#${c.id}] ${c.code} - ${c.name} (${c.duration_weeks || '--'} tuần)</option>`;
+          }).join('');
+        }
+      } catch (e) {
+        // Fallback nếu service admission chưa bật
+      }
+    }
+
+    async function loadTuitionFees() {
+      const tbody = document.getElementById('tuition-tbody');
+      try {
+        const res = await apiGet('/api/finance/tuition-fees');
+        const list = (res && res.data) ? res.data : [];
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Chưa có biểu phí nào. Hãy nhấn "+ Thiết lập biểu phí & Voucher".</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(item => {
+          const courseInfo = courseMap[item.course_id];
+          const courseLabel = courseInfo
+            ? `<code>${courseInfo.code}</code> - <strong>${courseInfo.name}</strong>`
+            : `<strong>Khóa học #${item.course_id}</strong>`;
+
+          const amount = Number(item.amount || 0);
+          const discount = Number(item.discount_amount || 0);
+          const finalAmount = Math.max(amount - discount, 0);
+
+          return `
+            <tr>
+              <td>#${item.id}</td>
+              <td>${courseLabel}</td>
+              <td><span style="text-decoration: line-through; color: var(--color-text-secondary);">${formatCurrency(amount)}</span></td>
+              <td>
+                ${item.discount_code ? `<span class="badge badge-success">🏷️ ${item.discount_code}</span>` : '---'}
+                ${discount > 0 ? `<div class="text-xs" style="color: var(--color-danger);">- ${formatCurrency(discount)}</div>` : ''}
+              </td>
+              <td><strong style="color: var(--color-primary);">${formatCurrency(finalAmount)}</strong></td>
+              <td>${item.note || '---'}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-danger);">Không thể tải dữ liệu biểu phí.</td></tr>`;
+      }
+    }
+
+    function openTuitionModal() {
+      document.getElementById('tuitionForm').reset();
+      document.getElementById('discountAmount').value = '0';
+      document.getElementById('tuitionModal').classList.add('active');
+    }
+
+    function closeTuitionModal() {
+      document.getElementById('tuitionModal').classList.remove('active');
+    }
+
+    document.getElementById('tuitionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const courseId = parseInt(document.getElementById('courseId').value, 10);
+      const amount = parseFloat(document.getElementById('tuitionAmount').value);
+      const discountAmount = parseFloat(document.getElementById('discountAmount').value || 0);
+      const voucherCode = document.getElementById('voucherCode').value.trim();
+      const note = document.getElementById('tuitionNote').value.trim();
+
+      if (amount <= 0) {
+        showToast('error', 'Học phí phải lớn hơn 0 (INV-FIN-01)!');
+        return;
+      }
+      if (discountAmount > amount) {
+        showToast('error', 'Số tiền giảm giá không được lớn hơn học phí chuẩn!');
+        return;
+      }
+
+      try {
+        await apiPost('/api/finance/tuition-fees', {
+          course_id: courseId,
+          amount: amount,
+          currency: 'VND',
+          discount_code: voucherCode || null,
+          discount_amount: discountAmount,
+          note: note || null
+        });
+        showToast('success', 'Đã lưu biểu phí và mã voucher thành công!');
+        closeTuitionModal();
+        loadTuitionFees();
+      } catch (err) {
+        showToast('error', err.message || 'Lỗi khi lưu biểu phí.');
+      }
+    });
+
+    async function initPage() {
+      await loadCoursesForMapping();
+      await loadTuitionFees();
+    }
+
+    initPage();
+  </script>
 </body>
 </html>

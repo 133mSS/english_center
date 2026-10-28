@@ -23,20 +23,33 @@
           <div class="card-header">
             <div>
               <h1 class="heading-1">Quản Lý Hóa Đơn & Thu Học Phí</h1>
-              <p class="text-secondary text-sm">Theo dõi hóa đơn học phí, trạng thái đóng tiền và thanh toán</p>
+              <p class="text-secondary text-sm">Theo dõi hóa đơn học phí, công nợ từng đợt và ghi nhận thanh toán chống lặp (FIN-02, FIN-03)</p>
             </div>
-            <button class="btn btn-primary" onclick="openCreateModal()">
-              + Tạo hóa đơn mới
-            </button>
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <input
+                type="number"
+                id="filterStudentId"
+                class="form-input"
+                placeholder="Lọc theo ID Học viên..."
+                style="width: 190px;"
+                oninput="loadInvoices()"
+              >
+              <button class="btn btn-primary" onclick="openCreateModal()">
+                + Tạo hóa đơn mới
+              </button>
+            </div>
           </div>
+
           <div class="card-body">
             <div class="table-container">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>Mã hóa đơn</th>
-                    <th>Mã học viên</th>
-                    <th>Số tiền học phí</th>
+                    <th>Học viên / ĐK</th>
+                    <th>Tổng học phí</th>
+                    <th>Đã đóng</th>
+                    <th>Còn nợ</th>
                     <th>Hạn nộp</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
@@ -44,7 +57,7 @@
                 </thead>
                 <tbody id="invoices-tbody">
                   <tr>
-                    <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">
+                    <td colspan="8" style="text-align: center; color: var(--color-text-secondary);">
                       Đang tải danh sách hóa đơn...
                     </td>
                   </tr>
@@ -57,32 +70,47 @@
     </div>
   </div>
 
-  <!-- Modal Tạo hóa đơn -->
+  <!-- MODAL 1: Lập Hóa Đơn Mới (Liên kết tuition_fee_id) -->
   <div class="modal-overlay" id="invoiceModal">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="heading-3">Lập Hóa Đơn Mới</h3>
+        <h3 class="heading-3">Lập Hóa Đơn Mới (Liên kết Biểu phí)</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <form id="invoiceForm">
         <div class="modal-body">
           <div class="form-group">
-            <label class="label" for="invCode">Mã hóa đơn <span class="required">*</span></label>
-            <input type="text" id="invCode" class="form-input" placeholder="INV-2026-004" required>
+            <label class="label" for="invCode">Mã hóa đơn</label>
+            <input type="text" id="invCode" class="form-input" placeholder="Tự động sinh nếu để trống">
           </div>
+
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
             <div class="form-group">
-              <label class="label" for="studentId">ID Học viên <span class="required">*</span></label>
-              <input type="number" id="studentId" class="form-input" value="1" required>
+              <label class="label" for="studentId">ID Học viên (student_id) <span class="required">*</span></label>
+              <input type="number" id="studentId" class="form-input" value="1" min="1" required>
             </div>
             <div class="form-group">
-              <label class="label" for="dueDate">Hạn thanh toán</label>
-              <input type="date" id="dueDate" class="form-input">
+              <label class="label" for="enrollmentId">Mã đăng ký (enrollment_id)</label>
+              <input type="number" id="enrollmentId" class="form-input" placeholder="Tùy chọn">
             </div>
           </div>
+
           <div class="form-group">
-            <label class="label" for="amount">Số tiền (VND) <span class="required">*</span></label>
-            <input type="number" id="amount" class="form-input" placeholder="6500000" step="50000" required>
+            <label class="label" for="invoiceTuitionFeeId">Chọn Biểu Phí & Voucher (tuition_fee_id)</label>
+            <select id="invoiceTuitionFeeId" class="form-input" onchange="onTuitionFeeSelected()">
+              <option value="">-- Không liên kết biểu phí (Nhập số tiền thủ công) --</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            <div class="form-group">
+              <label class="label" for="amount">Số tiền thanh toán (VND) <span class="required">*</span></label>
+              <input type="number" id="amount" class="form-input" placeholder="6500000" min="1000" step="50000" required>
+            </div>
+            <div class="form-group">
+              <label class="label" for="dueDate">Hạn thanh toán (due_date) <span class="required">*</span></label>
+              <input type="date" id="dueDate" class="form-input" required>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -93,55 +121,206 @@
     </div>
   </div>
 
+  <!-- MODAL 2: Ghi Nhận Thanh Toán & Chống Lặp (FIN-03) -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="heading-3">Ghi Nhận Thanh Toán (FIN-03)</h3>
+        <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+      </div>
+      <form id="paymentForm">
+        <div class="modal-body">
+          <input type="hidden" id="payInvoiceId">
+          <div class="form-group" style="background: var(--color-bg-secondary, #f8fafc); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <div>Mã hóa đơn: <strong id="payInvoiceCodeDisplay">---</strong></div>
+            <div class="text-sm text-secondary" style="margin-top: 4px;">
+              Tổng hóa đơn: <strong id="payTotalDisplay">0 ₫</strong> |
+              Đã đóng: <strong id="payPaidDisplay">0 ₫</strong> |
+              Còn cần thu: <strong id="payRemainingDisplay" style="color: var(--color-danger);">0 ₫</strong>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="payAmount">Số tiền đóng đợt này (VND) <span class="required">*</span></label>
+            <input type="number" id="payAmount" class="form-input" min="1" step="1000" required>
+            <small class="text-xs text-secondary">Hóa đơn chỉ chuyển sang PAID khi tổng các lần đóng &ge; tổng giá trị hóa đơn (INV-FIN-03).</small>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            <div class="form-group">
+              <label class="label" for="payMethod">Hình thức thanh toán <span class="required">*</span></label>
+              <select id="payMethod" class="form-input" required>
+                <option value="BANK_TRANSFER">Chuyển khoản (BANK_TRANSFER)</option>
+                <option value="CASH">Tiền mặt (CASH)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="label" for="payTxRef">Mã giao dịch (transaction_ref) <span class="required">*</span></label>
+              <input type="text" id="payTxRef" class="form-input" placeholder="VD: TX-2026-001" required>
+            </div>
+          </div>
+          <small class="text-xs text-secondary">
+            Ràng buộc <strong>INV-FIN-02</strong>: Hệ thống tự động chặn nếu gửi trùng <code>transaction_ref</code>.
+          </small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Xác nhận thu tiền</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Lịch sử giao dịch của Hóa đơn -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="heading-3">Lịch Sử Giao Dịch: <span id="historyInvoiceCode"></span></h3>
+        <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã GD (transaction_ref)</th>
+                <th>Số tiền</th>
+                <th>Hình thức</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody id="payments-history-tbody">
+              <tr><td colspan="4" style="text-align: center;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeHistoryModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/shared/js/auth.js"></script>
   <script src="/shared/js/api.js"></script>
   <script src="/shared/js/layout.js"></script>
   <script>
-    async function loadInvoices() {
-      const tbody = document.getElementById('invoices-tbody');
+    let tuitionFeesMap = {};
+
+    // Tải danh sách biểu phí từ API để đổ vào thẻ <select id="invoiceTuitionFeeId">
+    async function loadTuitionFeesForSelect() {
+      const select = document.getElementById('invoiceTuitionFeeId');
       try {
-        const res = await apiGet('/api/finance/invoices');
+        const res = await apiGet('/api/finance/tuition-fees');
         const list = (res && res.data) ? res.data : [];
-
-        if (list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Chưa có hóa đơn nào.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = list.map(inv => `
-          <tr>
-            <td><code>${inv.invoice_code}</code></td>
-            <td>Học viên #${inv.student_id}</td>
-            <td><strong style="color: var(--color-primary);">${formatCurrency(inv.amount)}</strong></td>
-            <td>${formatDate(inv.due_date)}</td>
-            <td>
-              <span class="badge ${inv.status === 'PAID' ? 'badge-success' : 'badge-danger'}">
-                ${inv.status === 'PAID' ? 'Đã nộp đủ' : 'Chưa đóng'}
-              </span>
-            </td>
-            <td>
-              ${inv.status === 'UNPAID' ? `
-                <button class="btn btn-primary btn-sm" onclick="payInvoice(${inv.id}, ${inv.amount})">
-                  Thu tiền 💰
-                </button>
-              ` : `
-                <span class="text-xs text-secondary">Đã đối soát</span>
-              `}
-            </td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        tbody.innerHTML = `
-          <tr><td colspan="6" style="text-align: center; color: var(--color-danger);">
-            Không thể tải dữ liệu từ API Finance (:8084). Vui lòng kiểm tra container.
-          </td></tr>
-        `;
+        
+        tuitionFeesMap = {};
+        let html = `<option value="">-- Không liên kết biểu phí (Nhập số tiền thủ công) --</option>`;
+        
+        list.forEach(tf => {
+          tuitionFeesMap[tf.id] = tf;
+          const discText = tf.discount_code ? ` (Voucher: ${tf.discount_code} - Giảm ${formatCurrency(tf.discount_amount || 0)})` : '';
+          html += `<option value="${tf.id}">[ID: ${tf.id}] Khóa học #${tf.course_id} - Giá: ${formatCurrency(tf.amount)}${discText}</option>`;
+        });
+        select.innerHTML = html;
+      } catch (e) {
+        console.warn("Không tải được danh sách biểu phí:", e);
       }
     }
 
-    function openCreateModal() {
+    function onTuitionFeeSelected() {
+      const tfId = document.getElementById('invoiceTuitionFeeId').value;
+      const amountInput = document.getElementById('amount');
+      if (tfId && tuitionFeesMap[tfId]) {
+        const tf = tuitionFeesMap[tfId];
+        const standardAmount = Number(tf.amount || 0);
+        const discountAmount = Number(tf.discount_amount || 0);
+        const finalPrice = Math.max(standardAmount - discountAmount, 0);
+        amountInput.value = finalPrice; // Tự động điền tiền sau giảm giá
+      }
+    }
+
+    function renderStatusBadge(status) {
+      if (status === 'PAID') return `<span class="badge badge-success">Đã nộp đủ (PAID)</span>`;
+      if (status === 'OVERDUE') return `<span class="badge badge-danger">Quá hạn (OVERDUE)</span>`;
+      if (status === 'CANCELLED') return `<span class="badge">Đã hủy (CANCELLED)</span>`;
+      return `<span class="badge badge-warning">Chưa đóng (UNPAID)</span>`;
+    }
+
+    async function loadInvoices() {
+      const tbody = document.getElementById('invoices-tbody');
+      const studentFilter = document.getElementById('filterStudentId').value.trim();
+      const queryParam = studentFilter ? `?student_id=${encodeURIComponent(studentFilter)}` : '';
+
+      try {
+        const res = await apiGet(`/api/finance/invoices${queryParam}`);
+        const list = (res && res.data) ? res.data : [];
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">Chưa có hóa đơn nào.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(inv => {
+          const totalAmount = Number(inv.amount || 0);
+          const paidAmount = Number(inv.paid_amount || 0);
+          const remainingAmount = inv.remaining_amount !== undefined
+            ? Number(inv.remaining_amount)
+            : Math.max(totalAmount - paidAmount, 0);
+
+          const canPay = inv.status === 'UNPAID' || inv.status === 'OVERDUE';
+
+          // Hiển thị nhãn mã voucher lấy từ biểu phí liên kết (tuition_fee_id)
+          const discountCode = inv.tf_discount_code || inv.discount_code;
+          const discountAmount = inv.tf_discount_amount || inv.discount_amount || 0;
+          const discountBadge = discountCode 
+            ? `<div style="margin-top: 4px;"><span class="badge badge-success" style="font-size: 11px;">🏷️ ${discountCode}</span> <span class="text-xs text-secondary">(-${formatCurrency(discountAmount)})</span></div>`
+            : '';
+
+          return `
+            <tr>
+              <td>
+                <code>${inv.invoice_code}</code>
+                ${discountBadge}
+                ${inv.tuition_fee_id ? `<div class="text-xs text-secondary">Biểu phí #ID: ${inv.tuition_fee_id}</div>` : ''}
+              </td>
+              <td>
+                <strong>HV #${inv.student_id}</strong>
+                ${inv.enrollment_id ? `<div class="text-xs text-secondary">Đơn ĐK #${inv.enrollment_id}</div>` : ''}
+              </td>
+              <td><strong style="color: var(--color-primary);">${formatCurrency(totalAmount)}</strong></td>
+              <td><span style="color: var(--color-success, #16a34a); font-weight: 600;">${formatCurrency(paidAmount)}</span></td>
+              <td><span style="color: ${remainingAmount > 0 ? 'var(--color-danger, #dc2626)' : 'var(--color-text-secondary)'}; font-weight: 600;">${formatCurrency(remainingAmount)}</span></td>
+              <td>${inv.due_date ? formatDate(inv.due_date) : '---'}</td>
+              <td>${renderStatusBadge(inv.status)}</td>
+              <td>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  ${canPay ? `
+                    <button class="btn btn-primary btn-sm" onclick="openPaymentModal(${inv.id}, '${inv.invoice_code}', ${totalAmount}, ${paidAmount}, ${remainingAmount})">
+                      Thu tiền 💰
+                    </button>
+                  ` : `
+                    <span class="text-xs text-secondary">Đã đối soát</span>
+                  `}
+                  <button class="btn btn-secondary btn-sm" onclick="viewPaymentHistory(${inv.id}, '${inv.invoice_code}')">
+                    Lịch sử
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--color-danger);">Không thể tải dữ liệu hóa đơn.</td></tr>`;
+      }
+    }
+
+    async function openCreateModal() {
       document.getElementById('invoiceForm').reset();
       document.getElementById('invCode').value = 'INV-' + Math.floor(1000 + Math.random() * 9000);
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      document.getElementById('dueDate').value = nextWeek;
+      await loadTuitionFeesForSelect();
       document.getElementById('invoiceModal').classList.add('active');
     }
 
@@ -151,36 +330,115 @@
 
     document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const tfIdVal = document.getElementById('invoiceTuitionFeeId').value;
+      const enrollmentVal = document.getElementById('enrollmentId').value.trim();
+
       const payload = {
         invoice_code: document.getElementById('invCode').value.trim(),
         student_id: parseInt(document.getElementById('studentId').value, 10),
+        enrollment_id: enrollmentVal ? parseInt(enrollmentVal, 10) : null,
+        tuition_fee_id: tfIdVal ? parseInt(tfIdVal, 10) : null,
         amount: parseFloat(document.getElementById('amount').value),
         due_date: document.getElementById('dueDate').value || null
       };
 
       try {
         await apiPost('/api/finance/invoices', payload);
-        showToast('success', 'Đã lập hóa đơn mới!');
+        showToast('success', 'Đã lập hóa đơn liên kết biểu phí thành công!');
         closeModal();
         loadInvoices();
-      } catch (e) {}
+      } catch (err) {
+        showToast('error', err.message || 'Lỗi khi tạo hóa đơn');
+      }
     });
 
-    async function payInvoice(id, amount) {
-      if (!confirm(`Xác nhận ghi nhận học viên đã thanh toán số tiền ${formatCurrency(amount)}?`)) return;
-      try {
-        await apiPost('/api/finance/payments', {
-          invoice_id: id,
-          amount: amount,
-          payment_method: 'BANK_TRANSFER',
-          transaction_ref: 'TRANS_' + Date.now()
-        });
-        showToast('success', 'Ghi nhận thanh toán thành công!');
-        loadInvoices();
-      } catch (e) {}
+    // --- Modal Ghi nhận thanh toán (FIN-03) ---
+    function openPaymentModal(id, code, total, paid, remaining) {
+      document.getElementById('paymentForm').reset();
+      document.getElementById('payInvoiceId').value = id;
+      document.getElementById('payInvoiceCodeDisplay').textContent = code;
+      document.getElementById('payTotalDisplay').textContent = formatCurrency(total);
+      document.getElementById('payPaidDisplay').textContent = formatCurrency(paid);
+      document.getElementById('payRemainingDisplay').textContent = formatCurrency(remaining);
+
+      document.getElementById('payAmount').value = remaining > 0 ? remaining : total;
+      document.getElementById('payMethod').value = 'BANK_TRANSFER';
+      document.getElementById('payTxRef').value = 'TX-' + Date.now();
+      document.getElementById('paymentModal').classList.add('active');
     }
 
-    loadInvoices();
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.remove('active');
+    }
+
+    document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const invoiceId = parseInt(document.getElementById('payInvoiceId').value, 10);
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const paymentMethod = document.getElementById('payMethod').value;
+      const transactionRef = document.getElementById('payTxRef').value.trim();
+
+      if (amount <= 0) {
+        showToast('error', 'Số tiền đóng phải lớn hơn 0 (INV-FIN-01)!');
+        return;
+      }
+      if (!transactionRef) {
+        showToast('error', 'Vui lòng nhập mã giao dịch (transaction_ref)!');
+        return;
+      }
+
+      try {
+        const res = await apiPost('/api/finance/payments', {
+          invoice_id: invoiceId,
+          amount: amount,
+          payment_method: paymentMethod,
+          transaction_ref: transactionRef
+        });
+        showToast('success', (res && res.message) ? res.message : 'Ghi nhận thanh toán thành công!');
+        closePaymentModal();
+        loadInvoices();
+      } catch (err) {
+        showToast('error', err.message || 'Giao dịch bị từ chối (Kiểm tra trùng mã transaction_ref)');
+      }
+    });
+
+    // --- Modal Xem lịch sử thanh toán ---
+    async function viewPaymentHistory(invoiceId, invoiceCode) {
+      document.getElementById('historyInvoiceCode').textContent = invoiceCode;
+      const tbody = document.getElementById('payments-history-tbody');
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Đang tải lịch sử...</td></tr>`;
+      document.getElementById('historyModal').classList.add('active');
+
+      try {
+        const res = await apiGet(`/api/finance/payments?invoice_id=${invoiceId}`);
+        const list = (res && res.data) ? res.data : [];
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Chưa có giao dịch thanh toán nào cho hóa đơn này.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = list.map(p => `
+          <tr>
+            <td><code>${p.transaction_ref}</code></td>
+            <td><strong style="color: var(--color-success, #16a34a);">${formatCurrency(p.amount)}</strong></td>
+            <td>${p.payment_method === 'CASH' ? 'Tiền mặt (CASH)' : 'Chuyển khoản (BANK_TRANSFER)'}</td>
+            <td>${p.paid_at ? formatDate(p.paid_at) : '---'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--color-danger);">Lỗi tải lịch sử thanh toán.</td></tr>`;
+      }
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.remove('active');
+    }
+
+    async function initPage() {
+      await loadTuitionFeesForSelect();
+      await loadInvoices();
+    }
+
+    initPage();
   </script>
 </body>
 </html>

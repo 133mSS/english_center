@@ -118,35 +118,42 @@ CREATE TABLE IF NOT EXISTS learning.grades (
 -- Quản lý học phí, hóa đơn, thanh toán
 -- ========================================================
 
+
+CREATE SCHEMA IF NOT EXISTS finance;
+
 CREATE TABLE IF NOT EXISTS finance.tuition_fees (
     id SERIAL PRIMARY KEY,
-    course_id INTEGER NOT NULL,
-    amount NUMERIC(12, 2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'VND',
+    course_id INTEGER NOT NULL UNIQUE,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    currency VARCHAR(10) NOT NULL DEFAULT 'VND',
+    discount_code VARCHAR(50),
+    discount_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
     note TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS finance.invoices (
     id SERIAL PRIMARY KEY,
-    invoice_code VARCHAR(50) UNIQUE NOT NULL,
+    invoice_code VARCHAR(50) NOT NULL UNIQUE,
     student_id INTEGER NOT NULL,
     enrollment_id INTEGER,
-    amount NUMERIC(12, 2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'UNPAID' CHECK (status IN ('UNPAID', 'PAID', 'CANCELLED', 'OVERDUE')),
-    due_date DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    tuition_fee_id INTEGER REFERENCES finance.tuition_fees(id) ON DELETE SET NULL,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'UNPAID' 
+        CHECK (status IN ('UNPAID', 'PAID', 'CANCELLED', 'OVERDUE')),
+    due_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS finance.payments (
     id SERIAL PRIMARY KEY,
     invoice_id INTEGER NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
-    amount NUMERIC(12, 2) NOT NULL,
-    payment_method VARCHAR(50) DEFAULT 'BANK_TRANSFER' CHECK (payment_method IN ('CASH', 'BANK_TRANSFER', 'CARD', 'MOMO')),
-    transaction_ref VARCHAR(100),
-    paid_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    payment_method VARCHAR(30) NOT NULL 
+        CHECK (payment_method IN ('CASH', 'BANK_TRANSFER')),
+    transaction_ref VARCHAR(100) NOT NULL UNIQUE, -- Chống lặp giao dịch (INV-FIN-03)
+    paid_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- ========================================================
 -- SEED INITIAL DATA (Dữ liệu mẫu cho Demo MVP)
 -- ========================================================
@@ -190,16 +197,31 @@ VALUES
     (3, 2, 'PENDING')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO finance.invoices (invoice_code, student_id, enrollment_id, amount, status, due_date)
+-- ========================================================
+-- SCHEMA: FINANCE - SEED DATA
+-- ========================================================
+
+-- 1. Thêm dữ liệu biểu phí và voucher cho các khóa học
+INSERT INTO finance.tuition_fees (course_id, amount, currency, discount_code, discount_amount, note)
 VALUES 
-    ('INV-2026-001', 1, 1, 6500000, 'PAID', '2026-11-05'),
-    ('INV-2026-002', 2, 2, 6500000, 'UNPAID', '2026-11-05'),
-    ('INV-2026-003', 3, 3, 8500000, 'UNPAID', '2026-11-10')
+    (1, 6500000, 'VND', 'EARLYBIRD500', 500000, 'Giảm 500k cho học viên đăng ký sớm khóa IELTS Foundation'),
+    (2, 8500000, 'VND', 'VIPSTUDENT', 1000000, 'Học bổng ưu đãi khóa IELTS Intensive'),
+    (3, 4200000, 'VND', NULL, 0, 'Mức học phí chuẩn TOEIC Cấp Tốc'),
+    (4, 3800000, 'VND', 'SUMMER2026', 300000, 'Chương trình ưu đãi hè Tiếng Anh Giao Tiếp')
+ON CONFLICT (course_id) DO NOTHING;
+
+-- 2. Thêm dữ liệu hóa đơn (có liên kết tuition_fee_id tương ứng)
+INSERT INTO finance.invoices (invoice_code, student_id, enrollment_id, tuition_fee_id, amount, status, due_date)
+VALUES 
+    ('INV-2026-001', 1, 1, 1, 6000000, 'PAID', '2026-11-05'),     -- Áp dụng biểu phí ID 1 (6.5tr - 500k giảm giá = 6tr)
+    ('INV-2026-002', 2, 2, 1, 6000000, 'UNPAID', '2026-11-05'),   -- Áp dụng biểu phí ID 1
+    ('INV-2026-003', 3, 3, 2, 7500000, 'UNPAID', '2026-11-10')    -- Áp dụng biểu phí ID 2 (8.5tr - 1tr giảm giá = 7.5tr)
 ON CONFLICT (invoice_code) DO NOTHING;
 
+-- 3. Thêm dữ liệu giao dịch thanh toán cho hóa đơn đã nộp đủ
 INSERT INTO finance.payments (invoice_id, amount, payment_method, transaction_ref)
 VALUES 
-    (1, 6500000, 'BANK_TRANSFER', 'FT261015998811')
+    (1, 6000000, 'BANK_TRANSFER', 'FT261015998811')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO learning.materials (class_id, title, description, material_type, file_url)

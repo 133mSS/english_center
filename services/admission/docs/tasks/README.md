@@ -1,7 +1,7 @@
 # Phân hệ Tuyển sinh & Định danh - Danh mục Tasks
 
 Toàn bộ tài liệu chi tiết về kế hoạch và danh mục task thực thi của phân hệ **Admission & Identity Service** được đặt tập trung tại:
-
+ 
 👉 **[`services/admission/tasks/`](../../tasks/README.md)**
 
 ### Tài liệu điều phối nhanh:

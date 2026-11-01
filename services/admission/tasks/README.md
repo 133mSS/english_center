@@ -5,6 +5,9 @@
 > - Đặc tả Kiến trúc Kỹ thuật: [`admission-tech-spec.md`](../docs/admission-tech-spec.md)
 > - Đặc tả Cơ sở dữ liệu: [`admission-schema-spec.md`](../docs/admission-schema-spec.md)
 > - Đặc tả Thiết kế UML: [`admission-uml-spec.md`](../docs/admission-uml-spec.md)
+> - **Bảng Theo dõi Tiến độ (Checklist)**: [`CHECKLIST.md`](CHECKLIST.md)
+> - **Nhật ký Phối hợp Nhóm (Worklog)**: [`WORKLOG.md`](WORKLOG.md)
+> - **Danh mục Toàn bộ 55 API Endpoints Dự kiến**: [`API_CATALOG.md`](API_CATALOG.md)
 > - Quy chuẩn Lập trình: [`AGENTS.md`](../../../AGENTS.md) | [`GEMINI.md`](../../../GEMINI.md)
 
 ---

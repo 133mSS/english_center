@@ -4,6 +4,11 @@ Toàn bộ tài liệu chi tiết về kế hoạch và danh mục task thực t
 
 👉 **[`services/admission/tasks/`](../../tasks/README.md)**
 
+### Tài liệu điều phối nhanh:
+- 📋 [**Bảng Tiến độ Checklist Toàn bộ Tasks**](../../tasks/CHECKLIST.md)
+- 📝 [**Nhật ký Phối hợp Nhóm (Worklog)**](../../tasks/WORKLOG.md)
+- 📡 [**Danh mục Toàn bộ 55 API Endpoints Dự kiến**](../../tasks/API_CATALOG.md)
+
 ### Danh mục các phân kỳ (Phases):
 - [Phase 0: Nền móng & Hạ tầng (INF)](../../tasks/phase-0-foundation/)
 - [Phase 1: Quản trị Định danh & Phiên (IAM)](../../tasks/phase-1-iam/)

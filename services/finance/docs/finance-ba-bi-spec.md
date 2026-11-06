@@ -6,7 +6,6 @@
 > **Port nội bộ:** `8084` (theo `docs/architecture.md`)  
 > **Cơ sở dữ liệu:** PostgreSQL 16, schema sở hữu `finance`  
 > **Phiên bản:** 1.0 – Master BA/BI Specification  
-> **Nguồn nghiệp vụ:** `Finance_Module.docx`; đối chiếu phạm vi hiện thực trong repository `main`.
 
 ---
 
@@ -26,7 +25,6 @@
 4. [Danh mục Yêu cầu Chức năng (Functional Requirements)](#4-danh-mục-yêu-cầu-chức-năng-functional-requirements)
 5. [Định nghĩa Chỉ số Quản trị & BI](#5-định-nghĩa-chỉ-số-quản-trị--bi)
 6. [Quy tắc Nghiệp vụ & Ràng buộc Dữ liệu](#6-quy-tắc-nghiệp-vụ--ràng-buộc-dữ-liệu)
-7. [Nguồn và Phạm vi xác nhận](#7-nguồn-và-phạm-vi-xác-nhận)
 
 ---
 
@@ -36,7 +34,7 @@
 
 Finance Service chịu trách nhiệm quản lý nghĩa vụ học phí và dòng tiền của học viên trong hệ thống Trung tâm Anh ngữ. Phân hệ nhận các định danh liên quan từ Admission/Student, quản lý biểu phí, lập hóa đơn, ghi nhận khoản thu, theo dõi số tiền đã thanh toán và số tiền còn phải thu.
 
-Các mục tiêu nghiệp vụ trong Finance_Module.docx:
+Finance Service đáp ứng các mục tiêu nghiệp vụ sau:
 - Quản lý học phí theo gói khóa học; phí kiểm tra đầu vào và giáo trình/tài liệu được gộp vào gói chuẩn theo chính sách.
 - Hỗ trợ phí học lại gộp trong hóa đơn chính (`MIXED`) hoặc lập hóa đơn riêng (`STANDALONE_RETAKE`).
 - Quản lý Voucher theo phần trăm hoặc số tiền cố định, giới hạn lượt dùng, giá trị đơn tối thiểu và thời hạn.
@@ -100,7 +98,7 @@ Nguyên tắc dữ liệu:
 | **Học viên (`STUDENT`)** | Tra cứu hóa đơn và tình trạng thanh toán của bản thân; thực hiện thanh toán; xem ví bảo lưu khi tính năng được triển khai. |
 | **Nhân viên Tư vấn/Tuyển sinh (`STAFF`)** | Khởi tạo luồng yêu cầu hóa đơn thông qua Admission; hỗ trợ học viên; tạo yêu cầu hoàn phí theo quy trình mục tiêu. |
 | **Kế toán (`STAFF`)** | Quản lý biểu phí, ghi nhận tiền mặt, kiểm tra giao dịch, theo dõi công nợ; xác minh và hoàn tất hồ sơ hoàn phí. |
-| **Giám đốc (`ADMIN`)** | Quản trị cấu hình tài chính, theo dõi báo cáo và phê duyệt cấp cuối đối với hoàn phí theo thiết kế mục tiêu. |
+| **Giám đốc (`ADMIN`)** | Quản trị cấu hình tài chính, theo dõi báo cáo và phê duyệt cấp cuối đối với hoàn phí theo quy trình nghiệp vụ. |
 | **Admission Service** | Gửi thông tin đăng ký/định danh để Finance lập hóa đơn; truy vấn trạng thái thanh toán theo hợp đồng tích hợp. |
 | **Student Service** | Là nguồn sở hữu hồ sơ học viên; Finance chỉ lưu ID tham chiếu. |
 | **Learning Service** | Nguồn dữ liệu buổi học/điểm danh khi triển khai quy trình xét hoàn phí. |
@@ -176,7 +174,7 @@ Backend hiện chấp nhận `CASH` và `BANK_TRANSFER`, chưa có `VIETQR` ho�
 
 ### 3.4. Quy trình mục tiêu: Voucher Campaign, Installments, VietQR, Wallet và Refund
 
-Các quy trình sau lấy từ Finance_Module.docx và là đặc tả mục tiêu, không phải mô tả route đã có trong backend hiện tại.
+Các quy trình nghiệp vụ của Finance bao gồm:
 
 **Voucher Campaign**
 - Voucher hỗ trợ `discount_percent` hoặc `discount_amount`.
@@ -208,25 +206,30 @@ Các quy trình sau lấy từ Finance_Module.docx và là đặc tả mục ti�
 
 ## 4. Danh mục Yêu cầu Chức năng (Functional Requirements)
 
-Mã chức năng giữ theo Finance_Module.docx. Trạng thái phân biệt tính năng có bằng chứng trong backend với tính năng mới chỉ có trong tài liệu mục tiêu.
+### Nhóm 1: Biểu phí và chính sách giảm giá (FR-TUI)
+- **FIN-F01 (Quản lý Biểu phí & Voucher)**: Quản lý mức học phí theo khóa học, đơn vị tiền tệ, mã giảm giá, số tiền giảm và ghi chú chính sách. Hỗ trợ cấu hình chiến dịch Voucher với loại giảm theo phần trăm hoặc số tiền cố định, điều kiện đơn hàng tối thiểu, thời gian hiệu lực và giới hạn lượt sử dụng.
+- **FIN-F02 (Kiểm tra tính hợp lệ Voucher)**: Kiểm tra mã Voucher, trạng thái hoạt động, thời gian hiệu lực, số lượt còn lại và điều kiện giá trị đơn hàng; trả về kết quả hợp lệ cùng số tiền giảm dự kiến.
 
-| Mã | Tên yêu cầu | Mô tả & quy tắc chính | Hiện trạng repository |
-|---|---|---|---|
-| **FIN-F01** | Quản lý biểu phí & mã giảm giá | Quản lý giá theo khóa học; số tiền giảm không vượt học phí chuẩn. Mở rộng thành Voucher Campaign độc lập. | Có GET/POST tuition-fees; discount code gắn biểu phí. |
-| **FIN-F02** | Kiểm tra Voucher | Kiểm tra mã, điều kiện đơn, thời gian, hạn mức và trả tiền giảm dự kiến. | Chưa có endpoint validate Voucher riêng. |
-| **FIN-F03** | Tự động sinh hóa đơn | Sinh hóa đơn khi Admission chốt đăng ký; hỗ trợ invoice items, phí học lại và installments. | Có POST tạo hóa đơn thủ công; chưa có auto-generate/items/installments. |
-| **FIN-F04** | Tra cứu hóa đơn | Tra cứu danh sách, lọc theo học viên, hiển thị đã thu/còn phải thu. | Có GET danh sách và lọc student_id; chưa có GET detail /{id}. |
-| **FIN-F05** | Ghi nhận thanh toán | Ghi nhận CASH, cập nhật tổng đã thu và trạng thái hóa đơn. | Có POST payments; hỗ trợ CASH/BANK_TRANSFER, chống trùng transaction_ref. |
-| **FIN-F06** | VietQR & webhook đối soát | Sinh QR động, nhận webhook và chống giao dịch trùng. | Chưa có. |
-| **FIN-F07** | Ví bảo lưu | Quản lý số dư ví, giao dịch bảo lưu và cấn trừ học phí. | Chưa có. |
-| **FIN-F08** | Quy trình hoàn phí 3 cấp | Kiểm tra số buổi, tính tiền hoàn, xác minh, phê duyệt và hoàn tất. | Chưa có. |
-| **FIN-F09** | Báo cáo BI tài chính | Doanh thu thực thu, công nợ, Voucher, hoàn phí và quỹ bảo lưu. | Chưa có Finance BI views/endpoints. |
+### Nhóm 2: Hóa đơn và công nợ (FR-INV)
+- **FIN-F03 (Tạo Hóa đơn)**: Lập hóa đơn cho học viên theo thông tin đăng ký, khóa học và biểu phí; hỗ trợ sinh hóa đơn tự động sau khi Admission chốt đăng ký. Hóa đơn có thể bao gồm gói học phí và phí học lại, được gộp hoặc tách theo loại hóa đơn; hỗ trợ lịch thanh toán một lần hoặc nhiều đợt.
+- **FIN-F04 (Tra cứu Hóa đơn)**: Cho phép tra cứu danh sách và chi tiết hóa đơn, các khoản mục, lịch thanh toán, lịch sử thu, số tiền đã thanh toán, số tiền còn phải thu và trạng thái công nợ.
 
+### Nhóm 3: Thanh toán và đối soát (FR-PAY)
+- **FIN-F05 (Ghi nhận Thanh toán)**: Ghi nhận khoản thu tiền mặt tại quầy, liên kết giao dịch với hóa đơn và kỳ thanh toán; cập nhật số tiền đã thu và trạng thái tương ứng.
+- **FIN-F06 (VietQR & Webhook Đối soát)**: Sinh mã VietQR động theo hóa đơn/kỳ thanh toán; tiếp nhận webhook từ ngân hàng, xác thực nội dung giao dịch và tự động ghi nhận khoản thu. Bảo đảm một giao dịch ngân hàng chỉ được ghi nhận một lần.
+
+### Nhóm 4: Bảo lưu và hoàn phí (FR-REF)
+- **FIN-F07 (Ví Bảo lưu Học viên)**: Quản lý số dư bảo lưu của học viên và lịch sử biến động ví. Tiền bảo lưu không được rút thành tiền mặt tự do; chỉ được sử dụng để cấn trừ học phí theo quy định.
+- **FIN-F08 (Quy trình Hoàn phí 3 cấp)**: Tiếp nhận yêu cầu hoàn phí, kiểm tra số buổi thực học, tính số tiền hoàn sau khấu trừ, xác minh bởi Kế toán, phê duyệt bởi Giám đốc và ghi nhận kết quả hoàn tiền.
+
+### Nhóm 5: Báo cáo quản trị (FR-BI)
+- **FIN-F09 (Báo cáo BI Tài chính)**: Cung cấp báo cáo doanh thu thực thu, công nợ phải thu/quá hạn, hiệu quả Voucher, tỷ lệ hoàn phí và số dư quỹ bảo lưu.
+ 
 ---
-
+ 
 ## 5. Định nghĩa Chỉ số Quản trị & BI
 
-Các công thức dưới đây là định nghĩa nghiệp vụ mục tiêu trong Finance_Module.docx. Chỉ số cần dữ liệu từ bảng mở rộng chưa có trong DDL MVP thì chưa thể tính trực tiếp trên schema hiện tại.
+Các chỉ số dưới đây thống nhất cách tính và ý nghĩa quản trị cho hoạt động tài chính của trung tâm.
 
 | Mã BI | Chỉ số | Công thức/định nghĩa | Mục đích |
 |---|---|---|---|
@@ -257,9 +260,9 @@ Các công thức dưới đây là định nghĩa nghiệp vụ mục tiêu tro
 | INV-FIN-02 | `transaction_ref` không được ghi nhận hai lần. | UNIQUE trong DDL; kiểm tra trước INSERT và bắt IntegrityError. |
 | INV-FIN-03 | Chỉ chuyển PAID khi tổng payment >= invoice.amount. | Logic trong make_payment; được liệt kê trong docs/invariants.md. |
 
-### 6.2. Quy tắc thiết kế mục tiêu từ Finance_Module.docx
+### 6.2. Quy tắc nghiệp vụ tài chính
 
-| Mã trong tài liệu nguồn | Quy tắc |
+| Mã quy tắc | Nội dung |
 |---|---|
 | INV-FIN-01 | Hóa đơn PAID/REFUNDED không được xóa hoặc sửa trực tiếp các trường tiền. |
 | INV-FIN-02 | final_amount = amount - discount_applied; tổng installments bằng final_amount; paid_amount không vượt final_amount. |
@@ -269,21 +272,5 @@ Các công thức dưới đây là định nghĩa nghiệp vụ mục tiêu tro
 | INV-FIN-06 | Ví bảo lưu không cho rút tự do; chỉ cấn trừ học phí. |
 | INV-FIN-07 | Chặn hoàn phí khi vượt giới hạn số buổi và bắt buộc qua luồng duyệt. |
 
-> Mã INV-FIN trong tài liệu Word khác nghĩa so với mã INV-FIN trong docs/invariants.md. Tài liệu này giữ riêng hai nguồn, không tự gộp thành một bộ mã mới.
 
 ---
-
-## 7. Nguồn và Phạm vi xác nhận
-
-**Nguồn nghiệp vụ:**
-- `Finance_Module.docx`: phạm vi, FIN-F01…FIN-F09, quy trình Voucher, installments, VietQR, wallet, refund và KPI cash-basis.
-
-**Nguồn repository:**
-- `services/finance/backend/main.py`: model request và route thực tế.
-- `scripts/init-db.sql`: 3 bảng Finance hiện có.
-- `services/finance/backend/requirements.txt`: dependencies.
-- `services/finance/frontend/tuition.html`, `invoices.html`: thao tác frontend đang gọi.
-- `docs/architecture.md`: port, quyền sở hữu dữ liệu và ranh giới service.
-- `docs/invariants.md`: ba invariant Finance được ghi nhận.
-
-Đặc tả API chi tiết, DDL/Data Dictionary, kiến trúc triển khai và UML được tách sang các tài liệu chuyên biệt trong `services/finance/docs/`.

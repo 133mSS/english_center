@@ -37,7 +37,6 @@ Các route được xác nhận trong `services/finance/backend/main.py`:
 - `GET /api/finance/payments`
 - `POST /api/finance/payments`
 
-Chưa có route GET invoice detail, Voucher validate độc lập, VietQR webhook, wallet, refund hoặc BI trong backend hiện tại.
 
 ---
 
@@ -110,7 +109,7 @@ PostgreSQL
 JSON response {success, data, message}
 ```
 
-Trong `main.py`, route xử lý nghiệp vụ truy cập DB trực tiếp qua SQLAlchemy text query; chưa có lớp Repository/Service tách riêng. Khi refactor cần giữ contract hiện hữu hoặc cập nhật frontend đồng bộ.
+Trong `main.py`, các route nghiệp vụ truy cập DB qua SQLAlchemy text query. Có thể tổ chức lớp Repository/Service riêng khi mở rộng module; cần giữ contract hiện hữu hoặc cập nhật frontend đồng bộ.
 
 ---
 

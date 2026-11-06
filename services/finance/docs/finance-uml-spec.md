@@ -432,8 +432,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     Start([Read invoice]) --> Load[Load invoice and payments]
-    Load --> Sum[paid_amount = SUM(payment.amount)]
-    Sum --> Remaining[remaining_amount = max(invoice.amount - paid_amount, 0)]
+    Load --> Sum["paid_amount = SUM(payment.amount)"]
+    Sum --> Remaining["remaining_amount = max(invoice.amount - paid_amount, 0)"]
     Remaining --> Return([Return invoice summary])
 ```
 

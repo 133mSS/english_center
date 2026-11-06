@@ -50,18 +50,15 @@ hotfix/{mô-tả-ngắn}                # Fix gấp trên main
 git checkout develop
 git pull origin develop
 
-# 2. Tạo branch mới từ develop
-git checkout -b feature/admission/course-crud
-
-# 3. Code...
-# 4. Commit thường xuyên (xem quy tắc commit bên dưới)
+# 2. Code...
+# 3. Commit thường xuyên (xem quy tắc commit bên dưới)
 git add .
 git commit -m "feat(admission): add course CRUD API"
 
-# 5. Push lên remote
-git push origin feature/admission/course-crud
+# 4. Push lên remote
+git push origin feature/admission
 
-# 6. Tạo Pull Request vào develop trên GitHub/GitLab
+# 5. Tạo Pull Request vào develop trên GitHub/GitLab
 ```
 
 ### Review & Merge

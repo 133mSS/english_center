@@ -1,3 +1,5 @@
+.agents/
+
 # Environment
 .env
 *.env.local

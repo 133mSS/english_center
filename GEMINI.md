@@ -47,6 +47,55 @@ Mỗi đơn vị công việc (Task) được mô tả tại `docs/tasks/`:
 
 ---
 
+## Coding Rules & Standards (Quy chuẩn Lập trình cho Agent)
+
+### 1. Kiến trúc Đa tầng & Phân chia Trách nhiệm (Layered Architecture)
+- **Spring Boot (Java 21 - Admission Service)**:
+  - Bắt buộc tuân thủ 3 tầng: `Controller` (Validate & nhận/trả DTO) ➔ `Service` (Nghiệp vụ cốt lõi) ➔ `Repository` (Spring Data JPA).
+  - Không viết business logic trong Controller. Controller chỉ nhận DTO, kiểm tra `@Valid`, gọi Service và trả về `ResponseEntity<ApiResponse<T>>`.
+  - Mọi thao tác ghi/sửa dữ liệu nhiều bước phải có annotation `@Transactional`.
+  - Cấu hình Jackson `PropertyNamingStrategies.SNAKE_CASE` để tự động ánh xạ giữa Java `camelCase` và JSON `snake_case`.
+- **FastAPI (Python 3.11 - Student, Learning, Finance Services)**:
+  - Phân tầng rõ ràng: `routers/` (Định tuyến API) ➔ `services/` (Logic nghiệp vụ) ➔ `models/` / `crud/` (SQLAlchemy / Database).
+  - Sử dụng Pydantic v2 `BaseModel` cho mọi Request/Response schema, ép kiểu chặt chẽ bằng Type Hints (`typing`).
+  - Không nối chuỗi SQL thủ công (Raw SQL string interpolation) để phòng ngừa triệt để lỗi SQL Injection.
+
+### 2. Định dạng Response & Bắt lỗi Toàn cục (Global Exception Handling)
+- **Cấu trúc Response Chuẩn**:
+  - Thành công: `{"success": true, "data": { ... }, "message": "Thông báo thân thiện"}`
+  - Thất bại: `{"success": false, "error": {"code": "MÃ_LỖI_NGHIỆP_VỤ", "message": "Mô tả lỗi"}}`
+- **Xử lý Ngoại lệ Tập trung**:
+  - Java: Bắt buộc dùng `@RestControllerAdvice` bắt các lỗi `MethodArgumentNotValidException`, `BusinessException`, `EntityNotFoundException`. Tuyệt đối không để lộ Java StackTrace 500 ra client.
+  - Python: Bắt buộc dùng `@app.exception_handler(HTTPException)` và `@app.exception_handler(RequestValidationError)` để format lại response JSON chuẩn.
+- **HTTP Status Codes chuẩn REST**: `200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`.
+
+### 3. Ranh giới Cơ sở Dữ liệu & Microservices (Database Isolation)
+- **Tuyệt đối không Cross-Schema Query**: Mỗi service chỉ được truy vấn schema của mình (`admission.*`, `student.*`, `learning.*`, `finance.*`). Cấm viết câu lệnh SQL JOIN chéo schema giữa các service.
+- **Giao tiếp liên Service**: Mọi nhu cầu lấy hoặc đồng bộ dữ liệu giữa các module bắt buộc phải thông qua REST API nội bộ hoặc event/webhook.
+
+### 4. Quy chuẩn Frontend (Vanilla JS & Design System)
+- **Design Tokens**: Bắt buộc sử dụng CSS variables từ `/shared/css/variables.css` (ví dụ: `var(--color-primary)`). Không tự ý hardcode mã màu hex trong CSS riêng của module.
+- **Gọi API**: Mọi request API từ giao diện phải gọi qua wrapper `/shared/js/api.js` và đính kèm JWT Token tự động từ `/shared/js/auth.js`.
+- **Trải nghiệm người dùng**: Luôn có trạng thái chờ (loading spinner hoặc disable nút bấm) khi gọi API và hiển thị thông báo lỗi rõ ràng cho người dùng từ trường `error.message`.
+
+### 5. Code Đơn giản, Comment Chi tiết & Clean Code (KISS Principle)
+- **Code Đơn giản & Trực diện (KISS)**: Ưu tiên cách viết code sáng sủa, tường minh, dễ hiểu và dễ debug. Tuyệt đối không over-engineering, không lạm dụng các design pattern phức tạp hoặc trừu tượng hóa quá mức nếu bài toán không đòi hỏi.
+- **Comment Chi tiết & Tận tâm**:
+  - Mọi Controller, Service method, Endpoint handler, DTO/Model, và Helper function bắt buộc có comment tiếng Việt giải thích: mục đích hàm, ý nghĩa các tham số đầu vào, kết quả trả về và các ngoại lệ/mã lỗi có thể ném ra.
+  - Các khối xử lý logic nghiệp vụ trọng yếu (như kiểm tra xung đột phòng/giáo viên, thuật toán chấm điểm, chuyển trạng thái đơn 48h, tính toán số tiền) phải có comment giải thích từng bước (step-by-step) để bất kỳ thành viên nào trong nhóm cũng hiểu và bảo trì được ngay.
+- **Không commit bí mật**: Mật khẩu, JWT secret key, API key luôn phải đọc từ biến môi trường (`os.getenv` hoặc `System.getenv`), không hardcode trong code.
+- **Không emoji trong code**: Không dùng emoji trong code logic, tên hàm, tên biến, log backend hoặc commit message kỹ thuật (chỉ dùng trên giao diện người dùng nếu cần).
+- **Giữ nguyên docstrings**: Bảo toàn các comment và docstring hiện có không liên quan đến phạm vi thay đổi.
+
+### 6. Cổng Kiểm soát Chất lượng (Testing Quality Gate)
+- Sau khi viết hoặc sửa bất kỳ dòng code nào, Agent bắt buộc phải chạy bộ Invariant Tests:
+  ```bash
+  python3 -m unittest discover -s tests/invariants -p "test_*.py" -v
+  ```
+- Toàn bộ 15 tests phải xanh (`OK`). Tuyệt đối không sửa assertion của file test để đối phó với lỗi code.
+
+---
+
 ## Architecture & Ports (Bản đồ Dịch vụ)
 
 | Thành phần | Cổng | Công nghệ | Nhiệm vụ chính |

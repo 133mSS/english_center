@@ -39,7 +39,7 @@ Finance Service đáp ứng các mục tiêu nghiệp vụ sau:
 - Hỗ trợ phí học lại gộp trong hóa đơn chính (`MIXED`) hoặc lập hóa đơn riêng (`STANDALONE_RETAKE`).
 - Quản lý Voucher theo phần trăm hoặc số tiền cố định, giới hạn lượt dùng, giá trị đơn tối thiểu và thời hạn.
 - Tự động sinh hóa đơn khi Admission chốt đăng ký; hỗ trợ thanh toán một lần hoặc nhiều đợt.
-- Thu tiền mặt và chuyển khoản; thiết kế mục tiêu có VietQR webhook để tự động đối soát.
+- Hỗ trợ thu tiền mặt, chuyển khoản ngân hàng và đối soát giao dịch VietQR tự động qua Webhook.
 - Quản lý ví bảo lưu nội bộ, khóa rút tiền mặt tự do; dùng số dư để cấn trừ học phí sau.
 - Hoàn phí theo số buổi thực học, tỷ lệ hoàn, khoản khấu trừ và quy trình phê duyệt 3 cấp.
 - Cung cấp BI theo dòng tiền thực thu (cash-basis).
@@ -102,7 +102,7 @@ Nguyên tắc dữ liệu:
 | **Admission Service** | Gửi thông tin đăng ký/định danh để Finance lập hóa đơn; truy vấn trạng thái thanh toán theo hợp đồng tích hợp. |
 | **Student Service** | Là nguồn sở hữu hồ sơ học viên; Finance chỉ lưu ID tham chiếu. |
 | **Learning Service** | Nguồn dữ liệu buổi học/điểm danh khi triển khai quy trình xét hoàn phí. |
-| **Ngân hàng / VietQR Webhook** | Gửi thông báo giao dịch chuyển khoản trong thiết kế mục tiêu. |
+| **Ngân hàng / VietQR Webhook** | Gửi thông báo giao dịch chuyển khoản để Finance đối soát và ghi nhận thanh toán. |
 
 ### 2.2. Ma trận Phân quyền nghiệp vụ
 

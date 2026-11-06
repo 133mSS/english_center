@@ -398,8 +398,14 @@ stateDiagram-v2
 ## 5. Toàn văn DDL PostgreSQL
 
 ```sql
+-- ============================================================================
+-- SCHEMA: finance
+-- Primary Key / Logical Foreign Key: SERIAL / INTEGER
+-- ============================================================================
+
 CREATE SCHEMA IF NOT EXISTS finance;
 
+-- 1. BẢNG CHIẾN DỊCH VOUCHER
 CREATE TABLE IF NOT EXISTS finance.vouchers (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -417,6 +423,7 @@ CREATE TABLE IF NOT EXISTS finance.vouchers (
     CONSTRAINT chk_voucher_usage_limit CHECK (current_uses <= max_uses)
 );
 
+-- 2. BẢNG HÓA ĐƠN
 CREATE TABLE IF NOT EXISTS finance.invoices (
     id SERIAL PRIMARY KEY,
     invoice_code VARCHAR(50) UNIQUE NOT NULL,
@@ -440,6 +447,7 @@ CREATE TABLE IF NOT EXISTS finance.invoices (
     CONSTRAINT chk_invoice_paid_bound CHECK (paid_amount <= final_amount)
 );
 
+-- 3. BẢNG CHI TIẾT KHOẢN MỤC HÓA ĐƠN
 CREATE TABLE IF NOT EXISTS finance.invoice_items (
     id SERIAL PRIMARY KEY,
     invoice_id INT NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
@@ -454,6 +462,7 @@ CREATE TABLE IF NOT EXISTS finance.invoice_items (
     CONSTRAINT chk_line_total_math CHECK (line_total = quantity * unit_price)
 );
 
+-- 4. BẢNG LỊCH ĐÓNG HỌC PHÍ NHIỀU ĐỢT / ĐẶT CỌC
 CREATE TABLE IF NOT EXISTS finance.installments (
     id SERIAL PRIMARY KEY,
     invoice_id INT NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
@@ -469,6 +478,7 @@ CREATE TABLE IF NOT EXISTS finance.installments (
     UNIQUE (invoice_id, installment_no)
 );
 
+-- 5. BẢNG GIAO DỊCH THU TIỀN & GẠCH NỢ VIETQR
 CREATE TABLE IF NOT EXISTS finance.payments (
     id SERIAL PRIMARY KEY,
     payment_code VARCHAR(50) UNIQUE NOT NULL,
@@ -486,6 +496,7 @@ CREATE TABLE IF NOT EXISTS finance.payments (
     paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 6. BẢNG VÍ BẢO LƯU HỌC VIÊN
 CREATE TABLE IF NOT EXISTS finance.student_wallets (
     id SERIAL PRIMARY KEY,
     student_id INT UNIQUE NOT NULL,
@@ -496,6 +507,7 @@ CREATE TABLE IF NOT EXISTS finance.student_wallets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 7. BẢNG LỊCH SỬ GIAO DỊCH VÍ BẢO LƯU
 CREATE TABLE IF NOT EXISTS finance.wallet_transactions (
     id SERIAL PRIMARY KEY,
     wallet_id INT NOT NULL REFERENCES finance.student_wallets(id),
@@ -508,6 +520,7 @@ CREATE TABLE IF NOT EXISTS finance.wallet_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. BẢNG YÊU CẦU & PHÊ DUYỆT HOÀN TIỀN 3 CẤP
 CREATE TABLE IF NOT EXISTS finance.refund_requests (
     id SERIAL PRIMARY KEY,
     refund_code VARCHAR(50) UNIQUE NOT NULL,
@@ -527,7 +540,13 @@ CREATE TABLE IF NOT EXISTS finance.refund_requests (
     bank_account_no VARCHAR(50),
     bank_account_holder VARCHAR(150),
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING_ACCOUNTANT'
-        CHECK (status IN ('PENDING_ACCOUNTANT', 'PENDING_DIRECTOR', 'APPROVED', 'REJECTED', 'COMPLETED')),
+        CHECK (status IN (
+            'PENDING_ACCOUNTANT',
+            'PENDING_DIRECTOR',
+            'APPROVED',
+            'REJECTED',
+            'COMPLETED'
+        )),
     requested_by_staff_id INT NOT NULL,
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified_by_accountant_id INT,
@@ -540,6 +559,7 @@ CREATE TABLE IF NOT EXISTS finance.refund_requests (
     CONSTRAINT chk_valid_early_withdrawal CHECK (attended_sessions <= max_allowed_sessions)
 );
 
+-- VIEW 1: BÁO CÁO DOANH THU THỰC THU VÀ HOÀN PHÍ THEO THÁNG
 CREATE OR REPLACE VIEW finance.vw_bi_cash_revenue_monthly AS
 WITH cash_in AS (
     SELECT
@@ -577,6 +597,7 @@ FROM cash_in ci
 FULL OUTER JOIN cash_refund cr ON ci.report_month = cr.report_month
 ORDER BY report_month DESC;
 
+-- VIEW 2: BÁO CÁO HIỆU QUẢ CHIẾN DỊCH VOUCHER
 CREATE OR REPLACE VIEW finance.vw_bi_voucher_campaigns AS
 SELECT
     v.id AS voucher_id,

@@ -6,7 +6,6 @@
 > **Hệ quản trị CSDL:** PostgreSQL 16  
 > **Schema:** `finance`  
 > **Phiên bản:** 1.0  
-> **Nguồn:** `scripts/init-db.sql` và `Finance_Module.docx`.
 
 ---
 
@@ -137,9 +136,9 @@ Quan hệ:
 
 ---
 
-## 4. Mô hình Schema Mục tiêu trong Finance Module
+## 4. Mô hình Dữ liệu Mở rộng của Finance
 
-Finance_Module.docx mô tả mô hình mở rộng gồm 8 bảng. Đây là **mô hình mục tiêu**, không phải DDL hiện trạng trong `scripts/init-db.sql`.
+Mô hình dữ liệu nghiệp vụ Finance gồm 8 bảng, bao quát biểu phí, hóa đơn, các kỳ thanh toán, giao dịch, ví bảo lưu và quy trình hoàn phí.
 
 | STT | Bảng mục tiêu | Vai trò |
 |---:|---|---|
@@ -152,9 +151,9 @@ Finance_Module.docx mô tả mô hình mở rộng gồm 8 bảng. Đây là **m
 | 7 | `finance.wallet_transactions` | Sổ giao dịch tăng/giảm ví. |
 | 8 | `finance.refund_requests` | Yêu cầu hoàn tiền và phê duyệt 3 cấp. |
 
-### 4.1. Data Dictionary rút gọn theo mô hình mục tiêu
+### 4.1. Danh mục thuộc tính của mô hình dữ liệu mở rộng
 
-| Bảng | Các cột được nêu trong Finance_Module.docx |
+| Bảng | Các cột nghiệp vụ |
 |---|---|
 | `vouchers` | `id`, `code`, `campaign_name`, `discount_percent`, `discount_amount`, `min_order_value`, `max_discount_amount`, `max_uses`, `current_uses`, `valid_from`, `expires_at`, `is_active`, `created_at` |
 | `invoices` | `id`, `invoice_code`, `student_id`, `course_id`, `enrollment_id`, `invoice_type`, `amount`, `voucher_id`, `discount_applied`, `final_amount`, `paid_amount`, `remaining_amount`, `status`, `notes`, `created_at`, `paid_at` |
@@ -175,7 +174,7 @@ Hai views này chưa có trong `scripts/init-db.sql` hiện tại.
 
 ## 5. Toàn văn DDL hiện tại trong scripts/init-db.sql
 
-Đoạn dưới đây phản ánh cấu trúc Finance được kiểm tra trong repository `main`.
+Đoạn dưới đây là DDL khởi tạo schema Finance hiện được khai báo trong `scripts/init-db.sql`.
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS finance;

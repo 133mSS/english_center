@@ -442,8 +442,8 @@ CREATE TABLE IF NOT EXISTS finance.payments (
 ### 5.1. Startup migration trong backend
 
 `services/finance/backend/main.py` có startup routine:
-- Kiểm tra cột `tuition_fee_id` trong `finance.invoices`; nếu chưa có thì ALTER TABLE để thêm cột và FK nội bộ tới `finance.tuition_fees(id)`.
-- Kiểm tra constraint UNIQUE `payments_transaction_ref_key`; nếu chưa có thì bổ sung UNIQUE cho `transaction_ref`.
+- Bảo đảm cột `tuition_fee_id` của `finance.invoices` tồn tại và có FK nội bộ tới `finance.tuition_fees(id)`.
+- Bảo đảm constraint UNIQUE `payments_transaction_ref_key` áp dụng cho cột `payments.transaction_ref`.
 - Migration lỗi sẽ rollback và in cảnh báo; không thể kết luận migration đã chạy thành công ở mọi môi trường chỉ từ mã nguồn.
 
 ---

@@ -99,7 +99,7 @@ flowchart TD
     SaveInvoice --> Done([Trả invoice])
 ```
 
-### 2.3. Quy trình hoàn tiền 3 cấp (thiết kế mục tiêu)
+### 2.3. Quy trình hoàn tiền 3 cấp
 
 ```mermaid
 flowchart TD
@@ -253,7 +253,7 @@ classDiagram
 
 ## 4. Biểu đồ Tuần tự (Sequence Diagrams)
 
-### 4.1. Tạo hóa đơn từ biểu phí (MVP)
+### 4.1. Tạo hóa đơn từ biểu phí
 
 ```mermaid
 sequenceDiagram
@@ -278,7 +278,7 @@ sequenceDiagram
     UI-->>User: Hiển thị kết quả
 ```
 
-### 4.2. Ghi nhận thanh toán và cập nhật hóa đơn (MVP)
+### 4.2. Ghi nhận thanh toán và cập nhật hóa đơn
 
 ```mermaid
 sequenceDiagram
@@ -377,7 +377,7 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-Backend hiện có logic đổi UNPAID thành OVERDUE và đổi trạng thái sang PAID khi thanh toán đủ. Route hủy hóa đơn chưa có trong file `main.py`.
+Hóa đơn được quản lý theo các trạng thái UNPAID, OVERDUE, PAID và CANCELLED; trạng thái thay đổi theo hạn thanh toán, kết quả thu tiền và nghiệp vụ hủy hóa đơn.
 
 ### 5.2. Vòng đời Payment
 

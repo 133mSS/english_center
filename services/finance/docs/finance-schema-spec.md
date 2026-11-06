@@ -14,6 +14,9 @@
 2. [Sơ đồ Thực thể Quan hệ (ERD)](#2-sơ-đồ-thực-thể-quan-hệ-erd)
 3. [Từ điển Dữ liệu của các Bảng Khởi tạo](#3-từ-điển-dữ-liệu-của-các-bảng-khởi-tạo)
 4. [Mô hình Dữ liệu Mở rộng của Finance](#4-mô-hình-dữ-liệu-mở-rộng-của-finance)
+   - 4.1. Danh mục thuộc tính
+   - 4.2. BI Views
+   - 4.3. Toàn văn DDL của mô hình dữ liệu Finance
 5. [Toàn văn DDL hiện tại trong scripts/init-db.sql](#5-toàn-văn-ddl-hiện-tại-trong-scriptsinit-dbsql)
 6. [Quy tắc Ràng buộc & Migration](#6-quy-tắc-ràng-buộc--migration)
 
@@ -140,7 +143,7 @@ Quan hệ:
 
 Mô hình dữ liệu nghiệp vụ Finance gồm 8 bảng, bao quát biểu phí, hóa đơn, các kỳ thanh toán, giao dịch, ví bảo lưu và quy trình hoàn phí.
 
-| STT | Bảng mục tiêu | Vai trò |
+| STT | Bảng | Vai trò |
 |---:|---|---|
 | 1 | `finance.vouchers` | Chiến dịch Voucher độc lập, điều kiện và hạn mức sử dụng. |
 | 2 | `finance.invoices` | Hóa đơn có loại, giảm giá, số đã thu và số còn phải thu. |
@@ -164,7 +167,7 @@ Mô hình dữ liệu nghiệp vụ Finance gồm 8 bảng, bao quát biểu ph�
 | `wallet_transactions` | `id`, `wallet_id`, `tx_type`, `amount`, `related_invoice_id`, `reason`, `created_by_staff_id`, `created_at` |
 | `refund_requests` | `id`, `refund_code`, `invoice_id`, `student_id`, `class_id`, `total_sessions`, `attended_sessions`, `max_allowed_sessions`, `paid_amount_snapshot`, `refundable_percent`, `deduction_amount`, `requested_refund_amount`, `approved_refund_amount`, `reason`, thông tin ngân hàng, các trường phê duyệt và trạng thái |
 
-### 4.2. BI Views mục tiêu
+### 4.2. BI Views nghiệp vụ
 - `finance.vw_bi_cash_revenue_monthly`: tổng hợp tiền mặt, chuyển khoản, gross cash-in, tiền hoàn và net cash revenue theo tháng.
 - `finance.vw_bi_voucher_campaigns`: tổng hợp lượt dùng Voucher, số hóa đơn, tổng giảm giá và tiền thu từ hóa đơn áp dụng Voucher.
 
@@ -465,6 +468,6 @@ CREATE TABLE IF NOT EXISTS finance.payments (
 - Backend cho phép request truyền `amount` ghi đè giá biểu phí; cần chốt chính sách.
 - DDL `payments.invoice_id` dùng ON DELETE CASCADE; nghiệp vụ tài chính nên cân nhắc bảo toàn lịch sử thay vì xóa payment theo invoice.
 - Chính sách lưu vết thay đổi biểu phí, versioning, audit trail và currency conversion cần được xác định thống nhất với nghiệp vụ tài chính.
-- Lộ trình migration giữa cấu trúc khởi tạo và mô hình dữ liệu mở rộng cần được xây dựng cùng quy tắc mapping dữ liệu và phương án rollback.
+- Khi chuyển đổi cấu trúc khởi tạo sang mô hình dữ liệu mở rộng, cần xác định quy tắc mapping dữ liệu, backup và phương án rollback.
 
 **Nguyên tắc migration:** Backup trước khi thay đổi; lập mapping trường cũ; không xóa dữ liệu payment; chạy thử trên bản sao DB; xác minh số lượng và tổng tiền trước/sau; chuẩn bị rollback.

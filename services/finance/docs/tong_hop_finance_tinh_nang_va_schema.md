@@ -1,65 +1,83 @@
 # TỔNG HỢP TÍNH NĂNG VÀ CƠ SỞ DỮ LIỆU PHÂN HỆ FINANCE
 
-**Dự án:** Hệ thống Quản lý Trung tâm Anh ngữ  
-**Phân hệ:** Finance Service (`finance-service`, port `8084`)  
-**Công nghệ:** Python 3.11+ / FastAPI / SQLAlchemy / PostgreSQL 16  
-**Schema:** `finance`  
-**Phiên bản:** 1.0 (Finance Feature & Schema Summary)
+**Dự án:** Hệ thống Quản lý Trung tâm Ngoại ngữ (English Center Management System)  
+**Phân hệ:** Finance Service (`finance-service`)  
+**Công nghệ:** Python 3.11+ / FastAPI / PostgreSQL  
+**Port nội bộ:** `8083`  
+**Gateway:** `/api/finance/...`  
+**Authentication:** Stateless JWT (HS256)  
+**Chuẩn dữ liệu:** SERIAL/INTEGER Keys, JSON `snake_case`  
+**Schema sở hữu:** `finance`  
+**Phiên bản:** Finance Module 2.0
 
 ---
 
 ## 1. Danh sách các tính năng
 
-Finance gồm **9 yêu cầu chức năng**, được phân chia theo các nhóm nghiệp vụ sau.
+### Nhóm 1: Biểu phí và Voucher
 
-### Nhóm 1: Biểu phí và chính sách giảm giá
+- **FIN-F01 – Quản lý chiến dịch Voucher:** Tạo và quản lý Voucher theo phần trăm hoặc số tiền cố định; kiểm soát số lượt sử dụng tối đa, số lượt đã sử dụng, giá trị đơn hàng tối thiểu và thời hạn hiệu lực.
+- **FIN-F02 – Kiểm tra tính hợp lệ Voucher:** Kiểm tra mã giảm giá và trả về số tiền được chiết khấu dự kiến (`discount_applied`).
 
-- **FIN-F01 – Quản lý Biểu phí & Voucher:** Quản lý học phí theo khóa học, đơn vị tiền, mã giảm giá, số tiền giảm và ghi chú. Hỗ trợ cấu hình chiến dịch Voucher theo phần trăm hoặc số tiền cố định, giới hạn lượt sử dụng, giá trị đơn hàng tối thiểu và thời hạn hiệu lực.
-- **FIN-F02 – Kiểm tra tính hợp lệ Voucher:** Kiểm tra mã Voucher, điều kiện đơn hàng, thời gian hiệu lực và hạn mức sử dụng; trả về kết quả hợp lệ cùng số tiền được chiết khấu dự kiến.
+### Nhóm 2: Hóa đơn và lịch thanh toán
 
-### Nhóm 2: Hóa đơn và công nợ
-
-- **FIN-F03 – Tạo Hóa đơn:** Tự động lập hóa đơn khi Admission chốt đăng ký khóa học. Hỗ trợ gộp hoặc tách phí học lại, tạo các khoản mục hóa đơn và thiết lập lịch thanh toán một lần hoặc nhiều đợt.
-- **FIN-F04 – Tra cứu Hóa đơn:** Tra cứu danh sách và chi tiết hóa đơn, các khoản mục học phí/học lại, lịch thanh toán, lịch sử đóng tiền, số tiền đã thanh toán và số tiền còn phải thu.
+- **FIN-F03 – Tự động sinh hóa đơn:** Sinh hóa đơn khi Admission chốt đăng ký; hỗ trợ gộp hoặc tách phí học lại thông qua `invoice_items`, đồng thời tạo lịch đóng phí qua `installments`.
+- **FIN-F04 – Tra cứu hóa đơn:** Tra cứu danh sách và chi tiết hóa đơn, các khoản mục học phí/học lại, lịch trả góp và lịch sử đóng tiền.
 
 ### Nhóm 3: Thanh toán và đối soát
 
-- **FIN-F05 – Ghi nhận Thanh toán:** Ghi nhận phiếu thu tiền mặt tại quầy, liên kết giao dịch với hóa đơn/kỳ thanh toán và cập nhật số tiền đã thu cùng trạng thái công nợ.
-- **FIN-F06 – VietQR & Webhook Đối soát:** Sinh mã VietQR động chứa mã tham chiếu thanh toán; tiếp nhận webhook ngân hàng và tự động ghi nhận khoản thu, bảo đảm giao dịch không bị ghi nhận lặp.
+- **FIN-F05 – Ghi nhận thanh toán tiền mặt:** Ghi nhận phiếu thu tại quầy; cập nhật `paid_amount`, trạng thái kỳ đóng và trạng thái hóa đơn (`PARTIAL` / `PAID`).
+- **FIN-F06 – VietQR và Webhook:** Sinh mã VietQR động chứa `payment_ref_code`; nhận Webhook ngân hàng và tự động gạch nợ theo thời gian thực.
 
-### Nhóm 4: Bảo lưu và hoàn phí
+### Nhóm 4: Ví bảo lưu và hoàn tiền
 
-- **FIN-F07 – Ví Bảo lưu Học viên:** Quản lý số dư bảo lưu và lịch sử giao dịch ví. Số dư không được rút thành tiền mặt tự do, chỉ được sử dụng để cấn trừ học phí khóa học tiếp theo.
-- **FIN-F08 – Quy trình Hoàn phí 3 cấp:** Tiếp nhận yêu cầu hoàn phí, kiểm tra số buổi thực học, tính số tiền hoàn sau khấu trừ, xác minh bởi Kế toán, phê duyệt bởi Giám đốc và ghi nhận kết quả hoàn tiền.
+- **FIN-F07 – Ví bảo lưu học viên:** Quản lý ví nội bộ, cộng tiền bảo lưu và cấn trừ học phí khóa học tiếp theo.
+- **FIN-F08 – Quy trình hoàn tiền 3 cấp:** Kiểm tra số buổi học từ Learning Service; tính tỷ lệ hoàn sau khấu trừ; Kế toán xác nhận, Giám đốc phê duyệt và Kế toán ghi nhận giải ngân.
 
 ### Nhóm 5: Báo cáo quản trị
 
-- **FIN-F09 – Báo cáo BI Tài chính:** Cung cấp dữ liệu doanh thu thực thu (Cash-basis), công nợ phải thu/quá hạn, hiệu quả chiến dịch Voucher, tỷ lệ hoàn phí và quỹ bảo lưu.
+- **FIN-F09 – BI tài chính:** Cung cấp Dashboard doanh thu thực thu (Cash-basis), hiệu quả chiến dịch Voucher, tỷ lệ hoàn phí và quỹ bảo lưu.
+
+### 1.1. Danh mục API và phân quyền
+
+| Mã | Method & Endpoint | Phân quyền | Chức năng |
+|---|---|---|---|
+| FIN-F01 | POST `/api/finance/vouchers`<br/>GET `/api/finance/vouchers` | ADMIN, STAFF | Tạo và quản lý chiến dịch Voucher. |
+| FIN-F02 | POST `/api/finance/vouchers/validate` | ADMIN, STAFF, STUDENT | Kiểm tra Voucher và tính `discount_applied`. |
+| FIN-F03 | POST `/api/finance/invoices/auto-generate` | ADMIN, STAFF hoặc Internal | Sinh hóa đơn khi Admission chốt đăng ký; tạo invoice items và installments. |
+| FIN-F04 | GET `/api/finance/invoices`<br/>GET `/api/finance/invoices/{id}` | ADMIN, STAFF, STUDENT | Tra cứu hóa đơn, khoản mục, lịch trả góp và lịch sử thanh toán. |
+| FIN-F05 | POST `/api/finance/payments/cash` | ADMIN, STAFF | Ghi nhận thu tiền mặt. |
+| FIN-F06 | GET `/api/finance/invoices/{id}/vietqr`<br/>POST `/api/finance/webhooks/vietqr` | STUDENT, STAFF / Webhook | Sinh QR và nhận Webhook ngân hàng. |
+| FIN-F07 | GET `/api/finance/wallets/{student_id}`<br/>POST `/api/finance/wallets/{student_id}/reserve` | ADMIN, STAFF, STUDENT | Tra cứu ví, cộng tiền bảo lưu và cấn trừ học phí. |
+| FIN-F08 | POST `/api/finance/refunds`<br/>PUT `/api/finance/refunds/{id}/verify`<br/>PUT `/api/finance/refunds/{id}/approve`<br/>PUT `/api/finance/refunds/{id}/complete` | Cấp 1: STAFF – Tư vấn<br/>Cấp 2: STAFF – Kế toán<br/>Cấp 3: ADMIN – Giám đốc | Quy trình hoàn tiền 3 cấp. |
+| FIN-F09 | GET `/api/finance/bi/cash-revenue`<br/>GET `/api/finance/bi/voucher-campaigns`<br/>GET `/api/finance/bi/refund-summary` | ADMIN, STAFF | Dữ liệu BI tài chính. |
 
 ## 2. Các bảng trong schema `finance`
 
-Có **8 bảng nghiệp vụ** phục vụ quản lý biểu phí, hóa đơn, thanh toán, bảo lưu và hoàn phí. Dưới đây là danh mục và tên toàn bộ các cột của từng bảng.
+Có **8 bảng nghiệp vụ** và **2 BI Views** trong schema Finance.
 
 | STT | Bảng | Vai trò | Các cột |
 |---:|---|---|---|
 | 1 | `finance.vouchers` | Quản lý chiến dịch Voucher, điều kiện giảm giá và giới hạn sử dụng | `id`, `code`, `campaign_name`, `discount_percent`, `discount_amount`, `min_order_value`, `max_discount_amount`, `max_uses`, `current_uses`, `valid_from`, `expires_at`, `is_active`, `created_at` |
-| 2 | `finance.invoices` | Quản lý hóa đơn học phí, loại hóa đơn, giảm giá, số đã thu và số còn phải thu | `id`, `invoice_code`, `student_id`, `course_id`, `enrollment_id`, `invoice_type`, `amount`, `voucher_id`, `discount_applied`, `final_amount`, `paid_amount`, `remaining_amount`, `status`, `notes`, `created_at`, `paid_at` |
-| 3 | `finance.invoice_items` | Lưu chi tiết các khoản mục học phí trọn gói và phí học lại | `id`, `invoice_id`, `course_id`, `item_type`, `description`, `quantity`, `unit_price`, `line_total`, `created_at` |
-| 4 | `finance.installments` | Quản lý lịch đóng học phí nhiều đợt/đặt cọc | `id`, `invoice_id`, `installment_no`, `payment_ref_code`, `amount_due`, `amount_paid`, `due_date`, `status`, `paid_at`, `created_at` |
-| 5 | `finance.payments` | Lưu giao dịch tiền mặt, VietQR và cấn trừ ví | `id`, `payment_code`, `invoice_id`, `installment_id`, `payment_method`, `amount`, `bank_transaction_id`, `qr_reference_code`, `webhook_payload`, `received_by_staff_id`, `status`, `paid_at` |
-| 6 | `finance.student_wallets` | Quản lý số dư ví bảo lưu của từng học viên | `id`, `student_id`, `balance`, `is_withdrawable`, `status`, `updated_at` |
-| 7 | `finance.wallet_transactions` | Lưu lịch sử cộng tiền bảo lưu, cấn trừ học phí và điều chỉnh ví | `id`, `wallet_id`, `tx_type`, `amount`, `related_invoice_id`, `reason`, `created_by_staff_id`, `created_at` |
-| 8 | `finance.refund_requests` | Quản lý yêu cầu hoàn phí, điều kiện số buổi học và thông tin phê duyệt 3 cấp | `id`, `refund_code`, `invoice_id`, `student_id`, `class_id`, `total_sessions`, `attended_sessions`, `max_allowed_sessions`, `paid_amount_snapshot`, `refundable_percent`, `deduction_amount`, `requested_refund_amount`, `approved_refund_amount`, `reason`, `bank_name`, `bank_account_no`, `bank_account_holder`, `status`, `requested_by_staff_id`, `requested_at`, `verified_by_accountant_id`, `verified_at`, `accountant_note`, `approved_by_director_id`, `approved_at`, `director_note`, `completed_at` |
+| 2 | `finance.invoices` | Quản lý hóa đơn học phí, loại hóa đơn, Voucher, số tiền phải thu và trạng thái | `id`, `invoice_code`, `student_id`, `course_id`, `enrollment_id`, `invoice_type`, `amount`, `voucher_id`, `discount_applied`, `final_amount`, `paid_amount`, `remaining_amount`, `status`, `notes`, `created_at`, `paid_at` |
+| 3 | `finance.invoice_items` | Chi tiết khoản mục gói học phí và phí học lại | `id`, `invoice_id`, `course_id`, `item_type`, `description`, `quantity`, `unit_price`, `line_total`, `created_at` |
+| 4 | `finance.installments` | Lịch đóng học phí nhiều đợt/đặt cọc | `id`, `invoice_id`, `installment_no`, `payment_ref_code`, `amount_due`, `amount_paid`, `due_date`, `status`, `paid_at`, `created_at` |
+| 5 | `finance.payments` | Giao dịch thu tiền mặt, VietQR và cấn trừ ví | `id`, `payment_code`, `invoice_id`, `installment_id`, `payment_method`, `amount`, `bank_transaction_id`, `qr_reference_code`, `webhook_payload`, `received_by_staff_id`, `status`, `paid_at` |
+| 6 | `finance.student_wallets` | Quản lý số dư ví bảo lưu của học viên | `id`, `student_id`, `balance`, `is_withdrawable`, `status`, `updated_at` |
+| 7 | `finance.wallet_transactions` | Lịch sử cộng/trừ ví và cấn trừ học phí | `id`, `wallet_id`, `tx_type`, `amount`, `related_invoice_id`, `reason`, `created_by_staff_id`, `created_at` |
+| 8 | `finance.refund_requests` | Yêu cầu hoàn tiền, điều kiện số buổi và phê duyệt 3 cấp | `id`, `refund_code`, `invoice_id`, `student_id`, `class_id`, `total_sessions`, `attended_sessions`, `max_allowed_sessions`, `paid_amount_snapshot`, `refundable_percent`, `deduction_amount`, `requested_refund_amount`, `approved_refund_amount`, `reason`, `bank_name`, `bank_account_no`, `bank_account_holder`, `status`, `requested_by_staff_id`, `requested_at`, `verified_by_accountant_id`, `verified_at`, `accountant_note`, `approved_by_director_id`, `approved_at`, `director_note`, `completed_at` |
 
-**BI Views:** `finance.vw_bi_cash_revenue_monthly` tổng hợp doanh thu thực thu và hoàn phí theo tháng; `finance.vw_bi_voucher_campaigns` tổng hợp hiệu quả chiến dịch Voucher.
+**BI Views:**
+- `finance.vw_bi_cash_revenue_monthly`: báo cáo doanh thu thực thu và hoàn phí theo tháng.
+- `finance.vw_bi_voucher_campaigns`: báo cáo hiệu quả chiến dịch Voucher.
 
-**Quy ước:** Các ID `student_id`, `course_id`, `enrollment_id`, `class_id` là logical reference liên service. Không tạo FK vật lý từ Finance sang schema Admission, Student hoặc Learning.
+**Quy ước:** Các cột `student_id`, `course_id`, `class_id` là Logical FK kiểu INTEGER; không tạo FK vật lý hoặc JOIN sang schema Admission/Learning.
 
 ## 3. Toàn văn SQL khởi tạo schema `finance`
 
 ```sql
 -- ============================================================================
--- FINANCE SERVICE SCHEMA DDL (PostgreSQL 16)
+-- SCHEMA: finance
 -- Primary Key / Logical Foreign Key: SERIAL / INTEGER
 -- ============================================================================
 
@@ -122,7 +140,7 @@ CREATE TABLE IF NOT EXISTS finance.invoice_items (
     CONSTRAINT chk_line_total_math CHECK (line_total = quantity * unit_price)
 );
 
--- 4. BẢNG LỊCH ĐÓNG HỌC PHÍ NHIỀU ĐỢT
+-- 4. BẢNG LỊCH ĐÓNG HỌC PHÍ NHIỀU ĐỢT / ĐẶT CỌC
 CREATE TABLE IF NOT EXISTS finance.installments (
     id SERIAL PRIMARY KEY,
     invoice_id INT NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
@@ -138,7 +156,7 @@ CREATE TABLE IF NOT EXISTS finance.installments (
     UNIQUE (invoice_id, installment_no)
 );
 
--- 5. BẢNG GIAO DỊCH THANH TOÁN
+-- 5. BẢNG GIAO DỊCH THU TIỀN & GẠCH NỢ VIETQR
 CREATE TABLE IF NOT EXISTS finance.payments (
     id SERIAL PRIMARY KEY,
     payment_code VARCHAR(50) UNIQUE NOT NULL,
@@ -167,7 +185,7 @@ CREATE TABLE IF NOT EXISTS finance.student_wallets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. BẢNG LỊCH SỬ GIAO DỊCH VÍ
+-- 7. BẢNG LỊCH SỬ GIAO DỊCH VÍ BẢO LƯU
 CREATE TABLE IF NOT EXISTS finance.wallet_transactions (
     id SERIAL PRIMARY KEY,
     wallet_id INT NOT NULL REFERENCES finance.student_wallets(id),
@@ -180,7 +198,7 @@ CREATE TABLE IF NOT EXISTS finance.wallet_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. BẢNG YÊU CẦU VÀ PHÊ DUYỆT HOÀN TIỀN
+-- 8. BẢNG YÊU CẦU & PHÊ DUYỆT HOÀN TIỀN 3 CẤP
 CREATE TABLE IF NOT EXISTS finance.refund_requests (
     id SERIAL PRIMARY KEY,
     refund_code VARCHAR(50) UNIQUE NOT NULL,
@@ -276,9 +294,9 @@ LEFT JOIN finance.invoices i ON v.id = i.voucher_id AND i.status != 'CANCELLED'
 GROUP BY v.id;
 ```
 
-## 4. Tài liệu đã đối chiếu
+## 4. Tài liệu chuyên biệt của Finance
 
-- `finance-ba-bi-spec.md`: đặc tả nghiệp vụ, 9 yêu cầu chức năng và các chỉ số BI.
-- `finance-schema-spec.md`: ERD, Data Dictionary, ràng buộc và SQL DDL của schema `finance`.
-- `finance-tech-spec.md`: kiến trúc kỹ thuật, cấu hình runtime, API và tích hợp frontend.
-- `finance-uml-spec.md`: Use Case, Class Diagram, Sequence Diagram, State Machine và Activity Diagram.
+- `finance-ba-bi-spec.md`: phạm vi nghiệp vụ, tác nhân, yêu cầu chức năng, quy tắc bất biến và KPI/BI.
+- `finance-schema-spec.md`: ERD 8 bảng, Data Dictionary, constraints, DDL và BI Views.
+- `finance-tech-spec.md`: kiến trúc tích hợp, API Contract, xác thực JWT và xử lý giao dịch.
+- `finance-uml-spec.md`: Use Case, Sequence Diagrams và ERD nghiệp vụ.

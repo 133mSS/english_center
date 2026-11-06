@@ -12,8 +12,8 @@
 ## MỤC LỤC
 1. [Triết lý Thiết kế & Ranh giới Dữ liệu](#1-triết-lý-thiết-kế--ranh-giới-dữ-liệu)
 2. [Sơ đồ Thực thể Quan hệ (ERD)](#2-sơ-đồ-thực-thể-quan-hệ-erd)
-3. [Từ điển Dữ liệu Chi tiết của Schema MVP](#3-từ-điển-dữ-liệu-chi-tiết-của-schema-mvp)
-4. [Mô hình Schema Mục tiêu trong Finance Module](#4-mô-hình-schema-mục-tiêu-trong-finance-module)
+3. [Từ điển Dữ liệu của các Bảng Khởi tạo](#3-từ-điển-dữ-liệu-của-các-bảng-khởi-tạo)
+4. [Mô hình Dữ liệu Mở rộng của Finance](#4-mô-hình-dữ-liệu-mở-rộng-của-finance)
 5. [Toàn văn DDL hiện tại trong scripts/init-db.sql](#5-toàn-văn-ddl-hiện-tại-trong-scriptsinit-dbsql)
 6. [Quy tắc Ràng buộc & Migration](#6-quy-tắc-ràng-buộc--migration)
 
@@ -86,7 +86,7 @@ Quan hệ:
 
 ---
 
-## 3. Từ điển Dữ liệu Chi tiết của Schema MVP
+## 3. Từ điển Dữ liệu của các Bảng Khởi tạo
 
 ### 3.1. Bảng `finance.tuition_fees`
 
@@ -168,11 +168,233 @@ Mô hình dữ liệu nghiệp vụ Finance gồm 8 bảng, bao quát biểu ph�
 - `finance.vw_bi_cash_revenue_monthly`: tổng hợp tiền mặt, chuyển khoản, gross cash-in, tiền hoàn và net cash revenue theo tháng.
 - `finance.vw_bi_voucher_campaigns`: tổng hợp lượt dùng Voucher, số hóa đơn, tổng giảm giá và tiền thu từ hóa đơn áp dụng Voucher.
 
-Hai views này chưa có trong `scripts/init-db.sql` hiện tại.
 
 ---
 
-## 5. Toàn văn DDL hiện tại trong scripts/init-db.sql
+
+
+### 4.3. Toàn văn DDL của mô hình dữ liệu Finance
+
+```sql
+-- ============================================================================
+-- FINANCE SERVICE SCHEMA DDL (PostgreSQL 16)
+-- Primary Key / Logical Foreign Key: SERIAL / INTEGER
+-- ============================================================================
+
+CREATE SCHEMA IF NOT EXISTS finance;
+
+-- 1. BẢNG CHIẾN DỊCH VOUCHER
+CREATE TABLE IF NOT EXISTS finance.vouchers (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    campaign_name VARCHAR(150) NOT NULL DEFAULT 'Chiến dịch ưu đãi học phí',
+    discount_percent INT DEFAULT 0 CHECK (discount_percent >= 0 AND discount_percent <= 100),
+    discount_amount DECIMAL(12, 2) DEFAULT 0 CHECK (discount_amount >= 0),
+    min_order_value DECIMAL(12, 2) DEFAULT 0 CHECK (min_order_value >= 0),
+    max_discount_amount DECIMAL(12, 2) DEFAULT NULL,
+    max_uses INT DEFAULT 100 CHECK (max_uses > 0),
+    current_uses INT DEFAULT 0 CHECK (current_uses >= 0),
+    valid_from TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_voucher_usage_limit CHECK (current_uses <= max_uses)
+);
+
+-- 2. BẢNG HÓA ĐƠN
+CREATE TABLE IF NOT EXISTS finance.invoices (
+    id SERIAL PRIMARY KEY,
+    invoice_code VARCHAR(50) UNIQUE NOT NULL,
+    student_id INT NOT NULL,
+    course_id INT NOT NULL,
+    enrollment_id INT,
+    invoice_type VARCHAR(30) NOT NULL DEFAULT 'COURSE_PACKAGE'
+        CHECK (invoice_type IN ('COURSE_PACKAGE', 'STANDALONE_RETAKE', 'MIXED')),
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount >= 0),
+    voucher_id INT REFERENCES finance.vouchers(id),
+    discount_applied DECIMAL(12, 2) DEFAULT 0 CHECK (discount_applied >= 0),
+    final_amount DECIMAL(12, 2) NOT NULL CHECK (final_amount >= 0),
+    paid_amount DECIMAL(12, 2) NOT NULL DEFAULT 0 CHECK (paid_amount >= 0),
+    remaining_amount DECIMAL(12, 2) GENERATED ALWAYS AS (final_amount - paid_amount) STORED,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'CANCELLED', 'REFUNDED')),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_at TIMESTAMP,
+    CONSTRAINT chk_invoice_math CHECK (final_amount = amount - discount_applied),
+    CONSTRAINT chk_invoice_paid_bound CHECK (paid_amount <= final_amount)
+);
+
+-- 3. BẢNG CHI TIẾT KHOẢN MỤC HÓA ĐƠN
+CREATE TABLE IF NOT EXISTS finance.invoice_items (
+    id SERIAL PRIMARY KEY,
+    invoice_id INT NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
+    course_id INT,
+    item_type VARCHAR(30) NOT NULL
+        CHECK (item_type IN ('TUITION_PACKAGE', 'RETAKE_FEE')),
+    description VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    unit_price DECIMAL(12, 2) NOT NULL CHECK (unit_price >= 0),
+    line_total DECIMAL(12, 2) NOT NULL CHECK (line_total >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_line_total_math CHECK (line_total = quantity * unit_price)
+);
+
+-- 4. BẢNG LỊCH ĐÓNG HỌC PHÍ NHIỀU ĐỢT
+CREATE TABLE IF NOT EXISTS finance.installments (
+    id SERIAL PRIMARY KEY,
+    invoice_id INT NOT NULL REFERENCES finance.invoices(id) ON DELETE CASCADE,
+    installment_no INT NOT NULL CHECK (installment_no >= 1),
+    payment_ref_code VARCHAR(50) UNIQUE NOT NULL,
+    amount_due DECIMAL(12, 2) NOT NULL CHECK (amount_due > 0),
+    amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0 CHECK (amount_paid >= 0),
+    due_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED')),
+    paid_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (invoice_id, installment_no)
+);
+
+-- 5. BẢNG GIAO DỊCH THANH TOÁN
+CREATE TABLE IF NOT EXISTS finance.payments (
+    id SERIAL PRIMARY KEY,
+    payment_code VARCHAR(50) UNIQUE NOT NULL,
+    invoice_id INT NOT NULL REFERENCES finance.invoices(id),
+    installment_id INT REFERENCES finance.installments(id),
+    payment_method VARCHAR(20) NOT NULL
+        CHECK (payment_method IN ('CASH', 'VIETQR', 'WALLET_OFFSET')),
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
+    bank_transaction_id VARCHAR(100) UNIQUE,
+    qr_reference_code VARCHAR(50),
+    webhook_payload JSONB,
+    received_by_staff_id INT,
+    status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS'
+        CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED')),
+    paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. BẢNG VÍ BẢO LƯU HỌC VIÊN
+CREATE TABLE IF NOT EXISTS finance.student_wallets (
+    id SERIAL PRIMARY KEY,
+    student_id INT UNIQUE NOT NULL,
+    balance DECIMAL(12, 2) NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    is_withdrawable BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+        CHECK (status IN ('ACTIVE', 'FROZEN')),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. BẢNG LỊCH SỬ GIAO DỊCH VÍ
+CREATE TABLE IF NOT EXISTS finance.wallet_transactions (
+    id SERIAL PRIMARY KEY,
+    wallet_id INT NOT NULL REFERENCES finance.student_wallets(id),
+    tx_type VARCHAR(30) NOT NULL
+        CHECK (tx_type IN ('RESERVATION_CREDIT', 'TUITION_OFFSET', 'ADJUSTMENT')),
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
+    related_invoice_id INT REFERENCES finance.invoices(id),
+    reason TEXT NOT NULL,
+    created_by_staff_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. BẢNG YÊU CẦU VÀ PHÊ DUYỆT HOÀN TIỀN
+CREATE TABLE IF NOT EXISTS finance.refund_requests (
+    id SERIAL PRIMARY KEY,
+    refund_code VARCHAR(50) UNIQUE NOT NULL,
+    invoice_id INT NOT NULL REFERENCES finance.invoices(id),
+    student_id INT NOT NULL,
+    class_id INT,
+    total_sessions INT NOT NULL CHECK (total_sessions > 0),
+    attended_sessions INT NOT NULL CHECK (attended_sessions >= 0),
+    max_allowed_sessions INT NOT NULL DEFAULT 3,
+    paid_amount_snapshot DECIMAL(12, 2) NOT NULL,
+    refundable_percent INT NOT NULL CHECK (refundable_percent BETWEEN 0 AND 100),
+    deduction_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    requested_refund_amount DECIMAL(12, 2) NOT NULL CHECK (requested_refund_amount >= 0),
+    approved_refund_amount DECIMAL(12, 2) CHECK (approved_refund_amount >= 0),
+    reason TEXT NOT NULL,
+    bank_name VARCHAR(100),
+    bank_account_no VARCHAR(50),
+    bank_account_holder VARCHAR(150),
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING_ACCOUNTANT'
+        CHECK (status IN (
+            'PENDING_ACCOUNTANT',
+            'PENDING_DIRECTOR',
+            'APPROVED',
+            'REJECTED',
+            'COMPLETED'
+        )),
+    requested_by_staff_id INT NOT NULL,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_by_accountant_id INT,
+    verified_at TIMESTAMP,
+    accountant_note TEXT,
+    approved_by_director_id INT,
+    approved_at TIMESTAMP,
+    director_note TEXT,
+    completed_at TIMESTAMP,
+    CONSTRAINT chk_valid_early_withdrawal CHECK (attended_sessions <= max_allowed_sessions)
+);
+
+-- VIEW 1: BÁO CÁO DOANH THU THỰC THU VÀ HOÀN PHÍ THEO THÁNG
+CREATE OR REPLACE VIEW finance.vw_bi_cash_revenue_monthly AS
+WITH cash_in AS (
+    SELECT
+        DATE_TRUNC('month', paid_at) AS report_month,
+        SUM(CASE WHEN payment_method = 'CASH' THEN amount ELSE 0 END) AS cash_at_counter,
+        SUM(CASE WHEN payment_method = 'VIETQR' THEN amount ELSE 0 END) AS vietqr_transfer,
+        SUM(CASE WHEN payment_method IN ('CASH', 'VIETQR') THEN amount ELSE 0 END) AS gross_cash_in
+    FROM finance.payments
+    WHERE status = 'SUCCESS'
+    GROUP BY DATE_TRUNC('month', paid_at)
+),
+cash_refund AS (
+    SELECT
+        DATE_TRUNC('month', completed_at) AS report_month,
+        COUNT(id) AS refund_count,
+        SUM(approved_refund_amount) AS total_refunded
+    FROM finance.refund_requests
+    WHERE status = 'COMPLETED'
+    GROUP BY DATE_TRUNC('month', completed_at)
+)
+SELECT
+    COALESCE(ci.report_month, cr.report_month) AS report_month,
+    COALESCE(ci.cash_at_counter, 0) AS cash_at_counter,
+    COALESCE(ci.vietqr_transfer, 0) AS vietqr_transfer,
+    COALESCE(ci.gross_cash_in, 0) AS gross_cash_in,
+    COALESCE(cr.refund_count, 0) AS refund_count,
+    COALESCE(cr.total_refunded, 0) AS total_refunded,
+    (COALESCE(ci.gross_cash_in, 0) - COALESCE(cr.total_refunded, 0)) AS net_cash_revenue,
+    CASE
+        WHEN COALESCE(ci.gross_cash_in, 0) > 0
+        THEN ROUND((COALESCE(cr.total_refunded, 0) / ci.gross_cash_in) * 100, 2)
+        ELSE 0
+    END AS refund_rate_pct
+FROM cash_in ci
+FULL OUTER JOIN cash_refund cr ON ci.report_month = cr.report_month
+ORDER BY report_month DESC;
+
+-- VIEW 2: BÁO CÁO HIỆU QUẢ CHIẾN DỊCH VOUCHER
+CREATE OR REPLACE VIEW finance.vw_bi_voucher_campaigns AS
+SELECT
+    v.id AS voucher_id,
+    v.code,
+    v.campaign_name,
+    v.discount_percent,
+    v.discount_amount,
+    v.max_uses,
+    v.current_uses,
+    ROUND((v.current_uses::DECIMAL / v.max_uses) * 100, 2) AS usage_rate_pct,
+    COUNT(i.id) AS total_invoices,
+    COALESCE(SUM(i.discount_applied), 0) AS total_discount_given,
+    COALESCE(SUM(i.paid_amount), 0) AS actual_cash_collected
+FROM finance.vouchers v
+LEFT JOIN finance.invoices i ON v.id = i.voucher_id AND i.status != 'CANCELLED'
+GROUP BY v.id;
+```
+
+## 5. DDL khởi tạo hiện có trong scripts/init-db.sql
 
 Đoạn dưới đây là DDL khởi tạo schema Finance hiện được khai báo trong `scripts/init-db.sql`.
 
@@ -242,7 +464,7 @@ CREATE TABLE IF NOT EXISTS finance.payments (
 - `tuition_fees` UNIQUE `course_id`, chưa lưu lịch sử nhiều phiên bản biểu phí cho cùng khóa.
 - Backend cho phép request truyền `amount` ghi đè giá biểu phí; cần chốt chính sách.
 - DDL `payments.invoice_id` dùng ON DELETE CASCADE; nghiệp vụ tài chính nên cân nhắc bảo toàn lịch sử thay vì xóa payment theo invoice.
-- Chưa có `updated_at`, versioning, audit trail, currency conversion.
-- Chưa có migration chính thức từ 3 bảng MVP sang mô hình mục tiêu 8 bảng.
+- Chính sách lưu vết thay đổi biểu phí, versioning, audit trail và currency conversion cần được xác định thống nhất với nghiệp vụ tài chính.
+- Lộ trình migration giữa cấu trúc khởi tạo và mô hình dữ liệu mở rộng cần được xây dựng cùng quy tắc mapping dữ liệu và phương án rollback.
 
 **Nguyên tắc migration:** Backup trước khi thay đổi; lập mapping trường cũ; không xóa dữ liệu payment; chạy thử trên bản sao DB; xác minh số lượng và tổng tiền trước/sau; chuẩn bị rollback.

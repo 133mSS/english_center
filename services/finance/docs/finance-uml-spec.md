@@ -4,7 +4,6 @@
 > **Phân hệ:** Finance Service  
 > **Port nội bộ:** 8084 theo `docs/architecture.md`  
 > **Schema:** `finance`  
-> **Nguồn:** Finance_Module.docx; DDL và backend hiện tại trong repository  
 > **Phiên bản:** 1.0
 
 ---
@@ -22,7 +21,7 @@
 
 ## 1. Tổng quan Mô hình hóa
 
-Finance Service xử lý các đối tượng hiện có: TuitionFee, Invoice, Payment. Mô hình mục tiêu trong Finance_Module.docx mở rộng thêm Voucher, InvoiceItem, Installment, StudentWallet, WalletTransaction và RefundRequest.
+Mô hình nghiệp vụ Finance gồm các đối tượng TuitionFee, Voucher, Invoice, InvoiceItem, Installment, Payment, StudentWallet, WalletTransaction và RefundRequest.
 
 **Actors:**
 - `STUDENT`: học viên tra cứu hóa đơn/thanh toán của bản thân.
@@ -30,7 +29,7 @@ Finance Service xử lý các đối tượng hiện có: TuitionFee, Invoice, P
 - `ADMIN`: quản trị/giám đốc.
 - `ADMISSION_SERVICE`: gửi yêu cầu lập hóa đơn khi chốt đăng ký.
 - `LEARNING_SERVICE`: cung cấp dữ liệu buổi học cho quy trình hoàn phí.
-- `BANK_WEBHOOK`: gửi kết quả giao dịch VietQR trong mô hình mục tiêu.
+- `BANK_WEBHOOK`: gửi kết quả giao dịch VietQR trong quy trình nghiệp vụ.
 
 ---
 
@@ -78,7 +77,7 @@ flowchart LR
     Bank --> UC7
 ```
 
-### 2.2. Lập hóa đơn và ghi nhận thanh toán (MVP hiện tại)
+### 2.2. Lập hóa đơn và ghi nhận thanh toán
 
 ```mermaid
 flowchart TD
@@ -118,7 +117,7 @@ flowchart TD
 
 ## 3. Biểu đồ Lớp (Class Diagram)
 
-### 3.1. Domain Model – Schema MVP
+### 3.1. Domain Model – Hóa đơn và thanh toán
 
 ```mermaid
 classDiagram
@@ -157,7 +156,7 @@ classDiagram
     Invoice "1" --> "0..*" Payment : invoice_id
 ```
 
-### 3.2. Domain Model – Mô hình mục tiêu trong Finance_Module.docx
+### 3.2. Domain Model – Các nghiệp vụ tài chính mở rộng
 
 ```mermaid
 classDiagram
@@ -307,7 +306,7 @@ sequenceDiagram
     UI-->>Accountant: Hiển thị kết quả thanh toán
 ```
 
-### 4.3. Gạch nợ VietQR (thiết kế mục tiêu)
+### 4.3. Gạch nợ VietQR
 
 ```mermaid
 sequenceDiagram
@@ -331,7 +330,7 @@ sequenceDiagram
     end
 ```
 
-### 4.4. Quy trình phê duyệt hoàn tiền 3 cấp (thiết kế mục tiêu)
+### 4.4. Quy trình phê duyệt hoàn tiền 3 cấp
 
 ```mermaid
 sequenceDiagram
@@ -363,7 +362,7 @@ sequenceDiagram
 
 ## 5. Biểu đồ Máy Trạng thái (State Machines)
 
-### 5.1. Vòng đời Invoice (MVP repository)
+### 5.1. Vòng đời Invoice
 
 ```mermaid
 stateDiagram-v2
@@ -380,11 +379,11 @@ stateDiagram-v2
 
 Backend hiện có logic đổi UNPAID thành OVERDUE và đổi trạng thái sang PAID khi thanh toán đủ. Route hủy hóa đơn chưa có trong file `main.py`.
 
-### 5.2. Vòng đời Payment (MVP)
+### 5.2. Vòng đời Payment
 
-Trong schema MVP, Payment không có cột status; do đó chỉ mô hình hóa bản ghi đã được INSERT và thời điểm `paid_at`, không gán các trạng thái PENDING/FAILED.
+Payment được ghi nhận bằng bản ghi giao dịch và thời điểm `paid_at`; vòng đời giao dịch được quản lý theo kết quả ghi nhận thanh toán.
 
-### 5.3. Vòng đời Refund (thiết kế mục tiêu)
+### 5.3. Vòng đời Refund
 
 ```mermaid
 stateDiagram-v2
@@ -444,13 +443,13 @@ flowchart TD
 | Mã yêu cầu | Use Case | Entity/Data | Luồng UML |
 |---|---|---|---|
 | FIN-F01 | Quản lý biểu phí | TuitionFee | Use Case biểu phí; sequence cập nhật biểu phí |
-| FIN-F02 | Kiểm tra Voucher | Voucher (target) | Use Case Voucher; chưa có backend route |
+| FIN-F02 | Kiểm tra Voucher | Voucher | Use Case Voucher và Domain Model |
 | FIN-F03 | Tạo hóa đơn | Invoice | Sequence tạo hóa đơn |
 | FIN-F04 | Tra cứu hóa đơn | Invoice, Payment | Use Case tra cứu; query invoice |
 | FIN-F05 | Ghi nhận thanh toán | Payment | Sequence thanh toán; Activity thanh toán |
-| FIN-F06 | VietQR webhook | Payment, Installment (target) | Sequence VietQR |
-| FIN-F07 | Ví bảo lưu | StudentWallet, WalletTransaction (target) | Use Case ví; Domain model mục tiêu |
-| FIN-F08 | Hoàn phí | RefundRequest (target) | Sequence refund; State machine refund |
-| FIN-F09 | BI tài chính | BI Views (target) | Use Case BI |
+| FIN-F06 | VietQR webhook | Payment, Installment | Sequence VietQR |
+| FIN-F07 | Ví bảo lưu | StudentWallet, WalletTransaction | Use Case ví và Domain Model |
+| FIN-F08 | Hoàn phí | RefundRequest | Sequence refund và State machine refund |
+| FIN-F09 | BI tài chính | BI Views | Use Case BI |
 
-**Quy ước:** Các sơ đồ ghi rõ MVP hoặc thiết kế mục tiêu để tránh hiểu UML mục tiêu là mô tả mã nguồn đã triển khai.
+**Quy ước:** Các sơ đồ thể hiện các thực thể dữ liệu, tác nhân và luồng nghiệp vụ thuộc phạm vi Finance Service.

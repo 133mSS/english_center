@@ -21,7 +21,6 @@
 7. [Luồng Xử lý & Transaction](#7-luồng-xử-lý--transaction)
 8. [Frontend Integration](#8-frontend-integration)
 9. [Security, Error Handling & Operational Notes](#9-security-error-handling--operational-notes)
-10. [Phạm vi chưa triển khai so với thiết kế mục tiêu](#10-phạm-vi-chưa-triển-khai-so-với-thiết-kế-mục-tiêu)
 
 ---
 
@@ -313,17 +312,3 @@ Frontend có thể tạo transaction_ref mặc định khi mở form; backend v�
 - Không ghi log credential, JWT secret hoặc thông tin tài khoản ngân hàng đầy đủ.
 
 ---
-
-## 10. Phạm vi chưa triển khai so với thiết kế mục tiêu
-
-Các mục xuất hiện trong Finance_Module.docx nhưng chưa có bằng chứng route/backend hiện tại:
-- Voucher Campaign độc lập với giới hạn và thời hạn.
-- Invoice items và phí học lại gộp/tách.
-- Installments/đặt cọc/trả góp.
-- VietQR QR generation và webhook.
-- Ví bảo lưu và wallet transactions.
-- Refund requests, quy trình duyệt 3 cấp và kết nối Learning lấy attendance.
-- BI endpoints và BI views.
-- Invoice detail endpoint và API tự động generate từ Admission.
-
-Đây là phạm vi cần thiết kế/triển khai bổ sung, không phải xác nhận các chức năng này đã tồn tại.

@@ -17,7 +17,7 @@
    - 4.1. Danh mục thuộc tính
    - 4.2. BI Views
    - 4.3. Toàn văn DDL của mô hình dữ liệu Finance
-5. [Toàn văn DDL hiện tại trong scripts/init-db.sql](#5-toàn-văn-ddl-hiện-tại-trong-scriptsinit-dbsql)
+5. [DDL khởi tạo trong scripts/init-db.sql](#5-ddl-khởi-tạo-hiện-có-trong-scriptsinit-dbsql)
 6. [Quy tắc Ràng buộc & Migration](#6-quy-tắc-ràng-buộc--migration)
 
 ---
@@ -117,7 +117,7 @@ Quan hệ:
 | `student_id` | `INTEGER` | NO | – | Logical reference | ID học viên từ service sở hữu hồ sơ. |
 | `enrollment_id` | `INTEGER` | YES | NULL | Logical reference | ID đơn đăng ký từ Admission. |
 | `tuition_fee_id` | `INTEGER` | YES | NULL | FK | Tham chiếu biểu phí trong Finance. |
-| `amount` | `NUMERIC(12,2)` | NO | – | CHECK > 0 | Tổng nghĩa vụ của hóa đơn trong MVP. |
+| `amount` | `NUMERIC(12,2)` | NO | – | CHECK > 0 | Tổng nghĩa vụ thanh toán của hóa đơn. |
 | `status` | `VARCHAR(20)` | NO | `UNPAID` | CHECK | `UNPAID`, `PAID`, `CANCELLED`, `OVERDUE`. |
 | `due_date` | `DATE` | NO | – | – | Ngày đến hạn thanh toán. |
 | `created_at` | `TIMESTAMPTZ` | NO | `NOW()` | – | Thời điểm tạo hóa đơn. |

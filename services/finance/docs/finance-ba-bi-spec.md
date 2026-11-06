@@ -170,7 +170,6 @@ Giới hạn hiện trạng: `discount_code` là mã giảm giá gắn với bi�
 7. Tính tổng tiền đã thu. Khi tổng này lớn hơn hoặc bằng `invoice.amount`, hóa đơn chuyển sang `PAID`; nếu chưa đủ thì giữ trạng thái hiện tại.
 8. Trả payment cùng `total_paid`, `invoice_amount`, `invoice_status`.
 
-Backend hiện chấp nhận `CASH` và `BANK_TRANSFER`, chưa có `VIETQR` hoặc `WALLET_OFFSET`.
 
 ### 3.4. Quy trình mục tiêu: Voucher Campaign, Installments, VietQR, Wallet và Refund
 
@@ -246,7 +245,6 @@ Các chỉ số dưới đây thống nhất cách tính và ý nghĩa quản tr
 - Tổng tiền đã thu của một hóa đơn: `SUM(finance.payments.amount)`.
 - Số tiền còn phải thu: `GREATEST(invoice.amount - SUM(payments.amount), 0)`.
 - Trạng thái quá hạn: invoice `UNPAID` có `due_date < CURRENT_DATE` được cập nhật thành `OVERDUE` trong luồng GET invoices.
-- Chưa có bảng hoàn tiền, ví, installments, Voucher Campaign độc lập hoặc Finance BI views trong DDL hiện hành.
 
 ---
 
